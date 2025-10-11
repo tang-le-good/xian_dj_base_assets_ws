@@ -21,11 +21,7 @@ int main(int argc, char** argv)
     while(ros::ok())
     {
         usleep(1000 * 1000); // 1000 ms
-<<<<<<< HEAD
         ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_stand_linear_actuator_enble", counter); // 原始检测结果
-=======
-        ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_params_server_heart_beat", counter); // 原始检测结果
->>>>>>> 4b3943ef132af5cbbcd3016d5005f65921f5ded0
         ros::param::get("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_params_server_heart_beat", xian_dj_retractable_platform_params_server_heart_beat);
         std::cout << "xian_dj_retractable_platform_params_server_heart_beat:" << xian_dj_retractable_platform_params_server_heart_beat << std::endl;
         if(counter > 1000)

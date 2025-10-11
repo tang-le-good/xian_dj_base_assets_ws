@@ -1,57 +1,11 @@
 #!/usr/bin/env python3
 #!coding=utf-8
 import rospy
-<<<<<<< HEAD
 import signal
 import sys
 import numpy as np
 import cv2, time, datetime, os, json, logging
      
-=======
-
-import signal
-
-
-# from cuda import cudart
-import sys
-import numpy as np
-import cv2, time, datetime, os, json, logging
-
-
-
-# class xian_aqc_keypoints_recognition:
-#     def __init__(self):
-        
-#         print("start xian_aqc_keypoints_recognition!")
-#         # self.keypoints_publisher = rospy.Publisher('xian_aqc_keypoints', xian_keypoints, queue_size=1)  # 创建消息发布者
-#         # self.rate = rospy.Rate(1)  # 设置消息发布频率为1Hz
-#         rospy.Subscriber('xian_crop_images', xian_crop_image_msg, self.callback)
-
-#         self.pre_time = datetime.datetime.now()
-#         self.cur_time = datetime.datetime.now()
-#         self.timediff = 1
-#         self.counter = 0
-
-#         # self.xian_keypoints_msg = xian_keypoints() # 定义消息
-
-#         rospy.spin()
-
-
-#     def callback(self, data):
-#         self.pre_time = self.cur_time
-#         self.cur_time = datetime.datetime.now()
-        
-
-#         # self.keypoints_publisher.publish(self.xian_keypoints_msg)
-        
-#         self.timediff = (self.cur_time - self.pre_time).total_seconds()
-#         rospy.set_param("/xian_aqc_dynamic_parameters_server/xian_keypoints_recognition_fps", 1.0/self.timediff)
-#         xian_keypoints_recognition_fps = rospy.get_param("/xian_aqc_dynamic_parameters_server/xian_keypoints_recognition_fps")
-#         print('FPS {:2.3f}'.format(xian_keypoints_recognition_fps))
-
-#         print('Time-Consuming {:3.3f}ms'.format(float((datetime.datetime.now()-self.cur_time).total_seconds())*1000))
-        
->>>>>>> 4b3943ef132af5cbbcd3016d5005f65921f5ded0
 class XianDjRetractablePlatformBaseElectric:
     def __init__(self):
         self.counter = 0
@@ -91,21 +45,12 @@ class XianDjRetractablePlatformBaseElectric:
 
 
     def xian_heat_beat_callback(self, event):
-<<<<<<< HEAD
         rospy.set_param("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_base_electric_heart_beat", self.counter)
         xian_dj_retractable_platform_base_electric_heart_beat = rospy.get_param("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_base_electric_heart_beat")
         if self.counter>1000:
             self.counter = 0
         self.counter += 1
         print("xian_dj_retractable_platform_base_electric_heart_beat:", xian_dj_retractable_platform_base_electric_heart_beat)
-=======
-        rospy.set_param("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_control_heart_beat", self.counter)
-        xian_dj_retractable_platform_control_heart_beat = rospy.get_param("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_control_heart_beat")
-        if self.counter>1000:
-            self.counter = 0
-        self.counter += 1
-        print("xian_dj_retractable_platform_control_heart_beat:", xian_dj_retractable_platform_control_heart_beat)
->>>>>>> 4b3943ef132af5cbbcd3016d5005f65921f5ded0
     
     
     def xian_stand_linear_actuator_fun(self, event):
@@ -153,10 +98,6 @@ class XianDjRetractablePlatformBaseElectric:
 
 
 if __name__ == '__main__':
-<<<<<<< HEAD
-=======
-    print('Hi')
->>>>>>> 4b3943ef132af5cbbcd3016d5005f65921f5ded0
     try:
         tt = XianDjRetractablePlatformBaseElectric()
         rospy.init_node('xian_dj_retractable_platform_base_electric', anonymous=True)  # 初始化ROS节点

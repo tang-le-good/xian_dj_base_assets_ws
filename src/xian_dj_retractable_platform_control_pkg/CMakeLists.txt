@@ -205,7 +205,6 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-<<<<<<< HEAD
 add_executable(xian_dj_retractable_platform_control src/xian_dj_retractable_platform_control.cpp )
 add_dependencies(xian_dj_retractable_platform_control ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(xian_dj_retractable_platform_control ${catkin_LIBRARIES})
@@ -213,5 +212,3 @@ target_link_libraries(xian_dj_retractable_platform_control ${catkin_LIBRARIES})
 add_executable(xian_dj_retractable_platform_error_monitor src/xian_dj_retractable_platform_error_monitor.cpp )
 add_dependencies(xian_dj_retractable_platform_error_monitor ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(xian_dj_retractable_platform_error_monitor ${catkin_LIBRARIES})
-=======
->>>>>>> 4b3943ef132af5cbbcd3016d5005f65921f5ded0

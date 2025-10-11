@@ -90,34 +90,6 @@ class XianDjRetractablePlatformErrorMonitor
             xian_dj_retractable_platform_base_electric_heart_beat_cur = xian_dj_retractable_platform_base_electric_heart_beat;
             if(xian_dj_retractable_platform_base_electric_heart_beat_pre == xian_dj_retractable_platform_base_electric_heart_beat_cur)
             {
-                xian_dj_retractable_platform_back_end_node_restart_flag ++;
-                ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_back_end_error", 1); 
-            }
-            else
-            {
-                xian_dj_retractable_platform_back_end_node_restart_flag = 0;
-                ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_back_end_error", 0);
-            }
-            if(xian_dj_retractable_platform_back_end_node_restart_flag > v_global_restart_max_count)
-            {
-                // 写入故障日志
-                // logline = timeStr + "   xian_dj_retractable_platform_back_end error";
-                // logFile.Write(logline);
-                // std::cout << logline << std::endl;
-                // 重启节点
-                command_kill_current_node = "ps -x | grep xian_dj_retractable_platform_back_end | grep -v 'grep' | kill `awk '{ print $1}'`";
-                system(command_kill_current_node.c_str());
-                usleep(v_restart_sleep_time);
-                command_restart_current_node = "rosrun xian_dj_retractable_platform_control_pkg xian_dj_retractable_platform_back_end &";
-                system(command_restart_current_node.c_str());
-                xian_dj_retractable_platform_back_end_node_restart_flag = 0; // 重启后多等20s
-            }
-
-            // 监控 xian_dj_retractable_platform_back_end_heart_beat
-            xian_dj_retractable_platform_back_end_heart_beat_pre = xian_dj_retractable_platform_back_end_heart_beat_cur;
-            xian_dj_retractable_platform_back_end_heart_beat_cur = xian_dj_retractable_platform_back_end_heart_beat;
-            if(xian_dj_retractable_platform_back_end_heart_beat_pre == xian_dj_retractable_platform_back_end_heart_beat_cur)
-            {
                 xian_dj_retractable_platform_base_electric_node_restart_flag ++;
                 ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_base_electric_error", 1); 
             }
@@ -129,7 +101,7 @@ class XianDjRetractablePlatformErrorMonitor
             if(xian_dj_retractable_platform_base_electric_node_restart_flag > v_global_restart_max_count)
             {
                 // 写入故障日志
-                // logline = timeStr + "   xian_dj_retractable_platform_base_electric error";
+                // logline = timeStr + "   xian_dj_retractable_platform_base_electric_node error";
                 // logFile.Write(logline);
                 // std::cout << logline << std::endl;
                 // 重启节点
@@ -139,6 +111,34 @@ class XianDjRetractablePlatformErrorMonitor
                 command_restart_current_node = "rosrun xian_dj_retractable_platform_control_pkg xian_dj_retractable_platform_base_electric &";
                 system(command_restart_current_node.c_str());
                 xian_dj_retractable_platform_base_electric_node_restart_flag = 0; // 重启后多等20s
+            }
+
+            // 监控 xian_dj_retractable_platform_back_end_heart_beat
+            xian_dj_retractable_platform_back_end_heart_beat_pre = xian_dj_retractable_platform_back_end_heart_beat_cur;
+            xian_dj_retractable_platform_back_end_heart_beat_cur = xian_dj_retractable_platform_back_end_heart_beat;
+            if(xian_dj_retractable_platform_back_end_heart_beat_pre == xian_dj_retractable_platform_back_end_heart_beat_cur)
+            {
+                xian_dj_retractable_platform_back_end_node_restart_flag ++;
+                ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_back_end_error", 1); 
+            }
+            else
+            {
+                xian_dj_retractable_platform_back_end_node_restart_flag = 0;
+                ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_back_end_error", 0);
+            }
+            if(xian_dj_retractable_platform_back_end_node_restart_flag > v_global_restart_max_count)
+            {
+                // 写入故障日志
+                // logline = timeStr + "   xian_dj_retractable_platform_back_end_node error";
+                // logFile.Write(logline);
+                // std::cout << logline << std::endl;
+                // 重启节点
+                command_kill_current_node = "ps -x | grep xian_dj_retractable_platform_back_end | grep -v 'grep' | kill `awk '{ print $1}'`";
+                system(command_kill_current_node.c_str());
+                usleep(v_restart_sleep_time);
+                command_restart_current_node = "rosrun xian_dj_retractable_platform_control_pkg xian_dj_retractable_platform_back_end &";
+                system(command_restart_current_node.c_str());
+                xian_dj_retractable_platform_back_end_node_restart_flag = 0; // 重启后多等20s
             }
             error_sum = xian_dj_retractable_platform_params_server_error + xian_dj_retractable_platform_control_error + xian_dj_retractable_platform_base_electric_error + xian_dj_retractable_platform_back_end_error ;
             xian_dj_retractable_platform_error_code = error_sum + 200;

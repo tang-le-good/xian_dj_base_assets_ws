@@ -11,6 +11,13 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  tf2
+  tf2_geometry_msgs
+  tf2_ros
+  pcl_conversions
+  pcl_ros
+  sensor_msgs
+  visualization_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -204,3 +211,11 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_executable(xian_dj_stewart_platform_control src/xian_dj_stewart_platform_control.cpp )
+add_dependencies(xian_dj_stewart_platform_control ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(xian_dj_stewart_platform_control ${PCL_LIBRARIES} ${catkin_LIBRARIES})
+
+add_executable(xian_dj_stewart_platform_error_monitor src/xian_dj_stewart_platform_error_monitor.cpp )
+add_dependencies(xian_dj_stewart_platform_error_monitor ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(xian_dj_stewart_platform_error_monitor ${PCL_LIBRARIES} ${catkin_LIBRARIES})

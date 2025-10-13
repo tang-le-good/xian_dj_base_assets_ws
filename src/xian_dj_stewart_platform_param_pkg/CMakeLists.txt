@@ -11,8 +11,11 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  dynamic_reconfigure
 )
-
+generate_dynamic_reconfigure_options(
+cfg/xian_dj_stewart_platform_params.cfg
+)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -204,3 +207,13 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_executable(xian_dj_stewart_platform_params_server
+src/xian_dj_stewart_platform_params_server.cpp
+)
+add_dependencies(xian_dj_stewart_platform_params_server ${${PROJECT_NAME}_EXPORTED_TARGETS}
+${catkin_EXPORTED_TARGETS})
+target_link_libraries(xian_dj_stewart_platform_params_server
+${catkin_LIBRARIES}
+)
+add_dependencies(xian_dj_stewart_platform_params_server ${PROJECT_NAME}_gencfg)

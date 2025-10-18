@@ -204,3 +204,15 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_executable(xian_dj_tele_op_controller_server src/xian_dj_tele_op_controller_server.cpp )
+add_dependencies(xian_dj_tele_op_controller_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(xian_dj_tele_op_controller_server ${catkin_LIBRARIES})
+
+add_executable(xian_dj_tele_op_controller_client src/xian_dj_tele_op_controller_client.cpp )
+add_dependencies(xian_dj_tele_op_controller_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(xian_dj_tele_op_controller_client ${catkin_LIBRARIES})
+
+add_executable(xian_dj_tele_op_error_monitor src/xian_dj_tele_op_error_monitor.cpp )
+add_dependencies(xian_dj_tele_op_error_monitor ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(xian_dj_tele_op_error_monitor ${catkin_LIBRARIES})

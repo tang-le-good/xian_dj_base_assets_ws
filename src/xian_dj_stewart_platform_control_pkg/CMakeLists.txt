@@ -219,3 +219,7 @@ target_link_libraries(xian_dj_stewart_platform_control ${PCL_LIBRARIES} ${catkin
 add_executable(xian_dj_stewart_platform_error_monitor src/xian_dj_stewart_platform_error_monitor.cpp )
 add_dependencies(xian_dj_stewart_platform_error_monitor ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(xian_dj_stewart_platform_error_monitor ${PCL_LIBRARIES} ${catkin_LIBRARIES})
+
+add_executable(xian_dj_stewart_platform_manual_controller src/xian_dj_stewart_platform_manual_controller.cpp )
+add_dependencies(xian_dj_stewart_platform_manual_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(xian_dj_stewart_platform_manual_controller ${PCL_LIBRARIES} ${catkin_LIBRARIES})

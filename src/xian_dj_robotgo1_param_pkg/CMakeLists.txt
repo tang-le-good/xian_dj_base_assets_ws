@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(xian_dj_remote_operation_param_pkg)
+project(xian_dj_robotgo1_param_pkg)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -14,9 +14,8 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
 )
 generate_dynamic_reconfigure_options(
-cfg/xian_dj_tele_op_params.cfg
+cfg/xian_dj_robotgo1_params.cfg
 )
-
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -108,7 +107,7 @@ cfg/xian_dj_tele_op_params.cfg
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES xian_dj_remote_operation_param_pkg
+#  LIBRARIES xian_dj_robotgo1_param_pkg
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
@@ -126,7 +125,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/xian_dj_remote_operation_param_pkg.cpp
+#   src/${PROJECT_NAME}/xian_dj_robotgo1_param_pkg.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -137,7 +136,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/xian_dj_remote_operation_param_pkg_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/xian_dj_robotgo1_param_pkg_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -201,7 +200,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_xian_dj_remote_operation_param_pkg.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_xian_dj_robotgo1_param_pkg.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
@@ -209,12 +208,12 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(xian_dj_tele_op_params_server
-src/xian_dj_tele_op_params_server.cpp
+add_executable(xian_dj_robotgo1_params_server
+src/xian_dj_robotgo1_params_server.cpp
 )
-add_dependencies(xian_dj_tele_op_params_server ${${PROJECT_NAME}_EXPORTED_TARGETS}
+add_dependencies(xian_dj_robotgo1_params_server ${${PROJECT_NAME}_EXPORTED_TARGETS}
 ${catkin_EXPORTED_TARGETS})
-target_link_libraries(xian_dj_tele_op_params_server
+target_link_libraries(xian_dj_robotgo1_params_server
 ${catkin_LIBRARIES}
 )
-add_dependencies(xian_dj_tele_op_params_server ${PROJECT_NAME}_gencfg)
+add_dependencies(xian_dj_robotgo1_params_server ${PROJECT_NAME}_gencfg)

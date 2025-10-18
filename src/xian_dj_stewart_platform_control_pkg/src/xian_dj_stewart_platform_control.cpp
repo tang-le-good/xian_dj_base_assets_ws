@@ -36,12 +36,12 @@ class XianDjStewartPlatformControl
             }
             else
             {
-                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_alpha", input_alpha);
-                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_beta", input_beta);
-                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_gamma", input_gamma);
-                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_x", input_x);
-                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_y", input_y);
-                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_z", input_z);
+                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_alpha_cmd", input_alpha);
+                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_beta_cmd", input_beta);
+                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_gamma_cmd", input_gamma);
+                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_x_cmd", input_x);
+                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_y_cmd", input_y);
+                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_z_cmd", input_z);
 
                 // 求A_i
                 A_1 = R_z(theta_1, A_is, PI);
@@ -383,12 +383,12 @@ class XianDjStewartPlatformControl
         pcl::PointXYZ Z = pcl::PointXYZ(0, 0, 90);
         pcl::PointXYZ O = pcl::PointXYZ(0, 0, 0);
 
-        double xian_dj_stewart_platform_input_alpha = 0;
-        double xian_dj_stewart_platform_input_beta = 0;
-        double xian_dj_stewart_platform_input_gamma = 0;
-        double xian_dj_stewart_platform_input_x = 0;
-        double xian_dj_stewart_platform_input_y = 0;
-        double xian_dj_stewart_platform_input_z = 0;
+        double xian_dj_stewart_platform_input_alpha_cmd = 0;
+        double xian_dj_stewart_platform_input_beta_cmd = 0;
+        double xian_dj_stewart_platform_input_gamma_cmd = 0;
+        double xian_dj_stewart_platform_input_x_cmd = 0;
+        double xian_dj_stewart_platform_input_y_cmd = 0;
+        double xian_dj_stewart_platform_input_z_cmd = 0;
 
         int counter = 0;
         int xian_dj_stewart_platform_control_heart_beat = 0;

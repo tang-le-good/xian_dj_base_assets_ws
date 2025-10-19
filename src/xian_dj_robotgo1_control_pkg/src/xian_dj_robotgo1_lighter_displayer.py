@@ -18,6 +18,7 @@ class XianDjRobotgo1LighterDisplayer:
         self.xian_dj_robotgo1_green_ligher_cmd = 0
         self.xian_dj_robotgo1_red_ligher_cmd = 0
         self.xian_dj_robotgo1_yellow_ligher_cmd = 0
+        self.xian_dj_robotgo1_displayer_cmd
 
         #引脚使能，并设置为输出模式
         self.gpio_export(self.GPIO_green_lighter)
@@ -53,6 +54,11 @@ class XianDjRobotgo1LighterDisplayer:
         self.gpio_set_value(self.GPIO_yellow_lighter, self.xian_dj_robotgo1_yellow_ligher_cmd)
         pass
 
+    def xian_dj_tobotgo1_displayer_func(self, event):
+        self.xian_dj_robotgo1_displayer_cmd = rospy.get_param("/xian_dj_robotgo1_params_server/xian_dj_robotgo1_displayer_cmd")
+        # 把该变量发送给数显模块
+        pass
+
     def gpio_export(self,pin):# 使能引脚
         export_path = f"/sys/class/gpio/gpio{pin}"
         if not os.path.exists(export_path):
@@ -84,6 +90,7 @@ if __name__ == '__main__':
         rospy.Timer(rospy.Duration(0.02), tt.xian_dj_tobotgo1_green_lighter_func, oneshot=False) # 绿灯线程
         rospy.Timer(rospy.Duration(0.02), tt.xian_dj_tobotgo1_red_lighter_func, oneshot=False) # 红灯线程
         rospy.Timer(rospy.Duration(0.02), tt.xian_dj_tobotgo1_yellow_lighter_func, oneshot=False) # 黄灯线程
+        rospy.Timer(rospy.Duration(0.02), tt.xian_dj_tobotgo1_displayer_func, oneshot=False) # 数显模块线程
         rospy.spin()  # 添加这行确保节点持续运行
 
     except rospy.ROSInterruptException:

@@ -1,3 +1,4 @@
+
 #include<ros/ros.h>
 #include<stdio.h>
 #include<sys/types.h>
@@ -28,8 +29,9 @@ class XianDjRobotgo1SwitchMode
         {   
             
             std::cout << "xian_dj_robotgo1_tele_op_mode: " << xian_dj_robotgo1_tele_op_mode << std::endl;
-            std::cout << "xian_dj_local_controller_r2_cmd: " << xian_dj_local_controller_r2_cmd << std::endl;
-            std::cout << "xian_dj_robotgo1_controller_r2_cmd_cur: " << xian_dj_robotgo1_controller_r2_cmd_cur << std::endl;
+            std::cout << "xian_dj_robotgo1_auto_mode: " << xian_dj_robotgo1_auto_mode << std::endl;
+            std::cout << "xian_dj_robotgo1_m_system_mode: " << xian_dj_robotgo1_m_system_mode << std::endl;
+            std::cout << "xian_dj_robotgo1_s_system_mode: " << xian_dj_robotgo1_s_system_mode << std::endl;
         }
 
         void controller_callback(const sensor_msgs::Joy::ConstPtr &Joy)
@@ -49,85 +51,78 @@ class XianDjRobotgo1SwitchMode
             ros::param::get("/xian_dj_robotgo1_params_server/xian_dj_local_controller_l1_cmd", xian_dj_local_controller_l1_cmd); 
             ros::param::get("/xian_dj_robotgo1_params_server/xian_dj_local_controller_l2_cmd", xian_dj_local_controller_l2_cmd); 
 
-            xian_dj_robotgo1_controller_r2_cmd_pre = xian_dj_robotgo1_controller_r2_cmd_cur;
-            xian_dj_robotgo1_controller_r2_cmd_cur = Joy->buttons[9];
-
-            xian_dj_robotgo1_controller_l2_cmd_pre = xian_dj_robotgo1_controller_l2_cmd_cur;
-            xian_dj_robotgo1_controller_l2_cmd_cur = Joy->buttons[8];
-
-            xian_dj_robotgo1_controller_l1_cmd_pre = xian_dj_robotgo1_controller_l1_cmd_cur;
-            xian_dj_robotgo1_controller_l1_cmd_cur = Joy->buttons[6];
-
-            xian_dj_robotgo1_controller_r1_cmd_pre = xian_dj_robotgo1_controller_r1_cmd_cur;
-            xian_dj_robotgo1_controller_r1_cmd_cur = Joy->buttons[7];
-
-            if (xian_dj_tele_op_r2_client_cmd ==1 || xian_dj_local_controller_r2_cmd ==1)
+            xian_dj_tele_op_r2_client_cmd_pre = xian_dj_tele_op_r2_client_cmd_cur;
+            xian_dj_tele_op_r2_client_cmd_cur = xian_dj_tele_op_r2_client_cmd;
+            xian_dj_local_controller_r2_cmd_pre = xian_dj_local_controller_r2_cmd_cur;
+            xian_dj_local_controller_r2_cmd_cur = xian_dj_local_controller_r2_cmd;
+            if ((xian_dj_tele_op_r2_client_cmd_pre ==0  && xian_dj_tele_op_r2_client_cmd_cur ==1) || (xian_dj_local_controller_r2_cmd_pre ==0 && xian_dj_local_controller_r2_cmd_cur==1))
             {
-               if(xian_dj_robotgo1_controller_r2_cmd_pre == 0 && xian_dj_robotgo1_controller_r2_cmd_cur==1)
-                {   
-                    xian_dj_robotgo1_tele_op_mode++;
-                    if(xian_dj_robotgo1_tele_op_mode > 1)
-                    {
-                        xian_dj_robotgo1_tele_op_mode = 0;
-                    } 
-                }
-                printf("xian_dj_robotgo1_tele_op_mode: %d \n", xian_dj_robotgo1_tele_op_mode); 
+              
+                xian_dj_robotgo1_tele_op_mode++;
+                if(xian_dj_robotgo1_tele_op_mode > 1)
+                {
+                    xian_dj_robotgo1_tele_op_mode = 0;
+                } 
+                 
                 ros::param::set("/xian_dj_robotgo1_params_server/xian_dj_robotgo1_tele_op_mode", xian_dj_robotgo1_tele_op_mode);
             }
             
             // 远程遥控模式：
             if (xian_dj_robotgo1_tele_op_mode == 1)
             {
-                if (xian_dj_tele_op_l2_client_cmd ==1 || xian_dj_local_controller_l2_cmd ==1)
+
+                xian_dj_tele_op_l2_client_cmd_pre = xian_dj_tele_op_l2_client_cmd_cur;
+                xian_dj_tele_op_l2_client_cmd_cur = xian_dj_tele_op_l2_client_cmd;
+                xian_dj_local_controller_l2_cmd_pre = xian_dj_local_controller_l2_cmd_cur;
+                xian_dj_local_controller_l2_cmd_cur = xian_dj_local_controller_l2_cmd;
+                if ((xian_dj_tele_op_l2_client_cmd_pre ==0  && xian_dj_tele_op_l2_client_cmd_cur ==1) || (xian_dj_local_controller_l2_cmd_pre ==0 && xian_dj_local_controller_l2_cmd_cur==1))
                 {
-                    if(xian_dj_robotgo1_controller_l2_cmd_pre == 0 && xian_dj_robotgo1_controller_l2_cmd_cur==1)
-                    {   
-                        xian_dj_robotgo1_auto_mode++;
-                        if(xian_dj_robotgo1_auto_mode > 1)
-                        {
-                            xian_dj_robotgo1_auto_mode = 0;
-                        } 
-                    }
-                    printf("xian_dj_robotgo1_auto_mode: %d \n", xian_dj_robotgo1_auto_mode);
+                
+                    xian_dj_robotgo1_auto_mode++;
+                    if(xian_dj_robotgo1_auto_mode > 1)
+                    {
+                        xian_dj_robotgo1_auto_mode = 0;
+                    } 
                     ros::param::set("/xian_dj_robotgo1_params_server/xian_dj_robotgo1_auto_mode", xian_dj_robotgo1_auto_mode);
                 }
                 
-                if (xian_dj_tele_op_l1_client_cmd ==1 || xian_dj_local_controller_l1_cmd ==1)
+                xian_dj_tele_op_l1_client_cmd_pre = xian_dj_tele_op_l1_client_cmd_cur;
+                xian_dj_tele_op_l1_client_cmd_cur = xian_dj_tele_op_l1_client_cmd;
+                xian_dj_local_controller_l1_cmd_pre = xian_dj_local_controller_l1_cmd_cur;
+                xian_dj_local_controller_l1_cmd_cur = xian_dj_local_controller_l1_cmd;
+                if ((xian_dj_tele_op_l1_client_cmd_pre ==0  && xian_dj_tele_op_l1_client_cmd_cur ==1) || (xian_dj_local_controller_l1_cmd_pre ==0 && xian_dj_local_controller_l1_cmd_cur==1))
                 {
-                    if(xian_dj_robotgo1_controller_l1_cmd_pre == 0 && xian_dj_robotgo1_controller_l1_cmd_cur==1)
-                    {   
-                        xian_dj_robotgo1_m_system_mode++;
-                        if(xian_dj_robotgo1_m_system_mode > 3)
-                        {
-                            xian_dj_robotgo1_m_system_mode = 0;
-                        } 
-                    }
-                    printf("xian_dj_robotgo1_m_system_mode: %d \n", xian_dj_robotgo1_m_system_mode); 
+                    xian_dj_robotgo1_m_system_mode++;
+                    if(xian_dj_robotgo1_m_system_mode > 3)
+                    {
+                        xian_dj_robotgo1_m_system_mode = 0;
+                    } 
                     ros::param::set("/xian_dj_robotgo1_params_server/xian_dj_robotgo1_m_system_mode", xian_dj_robotgo1_m_system_mode);
                 }
-                
-                if (xian_dj_tele_op_r1_client_cmd ==1 || xian_dj_local_controller_r1_cmd ==1)
+  
+                xian_dj_tele_op_r1_client_cmd_pre = xian_dj_tele_op_r1_client_cmd_cur;
+                xian_dj_tele_op_r1_client_cmd_cur = xian_dj_tele_op_r1_client_cmd;
+                xian_dj_local_controller_r1_cmd_pre = xian_dj_local_controller_r1_cmd_cur;
+                xian_dj_local_controller_r1_cmd_cur = xian_dj_local_controller_r1_cmd;
+                if ((xian_dj_tele_op_r1_client_cmd_pre ==0  && xian_dj_tele_op_r1_client_cmd_cur ==1) || (xian_dj_local_controller_r1_cmd_pre ==0 && xian_dj_local_controller_r1_cmd_cur==1))
                 {
-                    if(xian_dj_robotgo1_m_system_mode == 3)
+                    if (xian_dj_robotgo1_m_system_mode == 3) 
                     {
-                        if(xian_dj_robotgo1_controller_r1_cmd_pre == 0 && xian_dj_robotgo1_controller_r1_cmd_cur ==1)
-                        {   
-                            xian_dj_robotgo1_s_system_mode++;
-                            if(xian_dj_robotgo1_s_system_mode > 3)
-                            {
-                                xian_dj_robotgo1_s_system_mode = 0;
-                            }     
-                        } 
-                    }
+                        xian_dj_robotgo1_s_system_mode++;
+                        if(xian_dj_robotgo1_s_system_mode > 3)
+                        {
+                            xian_dj_robotgo1_s_system_mode = 0;
+                        }
+                    }  
                     else
                     {
-                       xian_dj_robotgo1_s_system_mode = 0; 
-                    } 
-                    printf("xian_dj_robotgo1_s_system_mode: %d \n", xian_dj_robotgo1_s_system_mode); 
-                    ros::param::set("/xian_dj_robotgo1_params_server/xian_dj_robotgo1_s_system_mode", xian_dj_robotgo1_s_system_mode);
+                        xian_dj_robotgo1_s_system_mode = 0;
+                    }
+                             
                 }
-
-            }
+                ros::param::set("/xian_dj_robotgo1_params_server/xian_dj_robotgo1_s_system_mode", xian_dj_robotgo1_s_system_mode);
+                
+            }   
         }
 
     private:
@@ -150,18 +145,27 @@ class XianDjRobotgo1SwitchMode
         int xian_dj_local_controller_l1_cmd = 0;
         int xian_dj_local_controller_l2_cmd = 0;
 
-        // 遥控器变量
-        int xian_dj_robotgo1_controller_r2_cmd_pre = 0;
-        int xian_dj_robotgo1_controller_r2_cmd_cur = 0;
+        // 中间变量
+        int xian_dj_tele_op_r1_client_cmd_pre = 0;
+        int xian_dj_tele_op_r2_client_cmd_pre = 0;
+        int xian_dj_tele_op_l1_client_cmd_pre = 0;
+        int xian_dj_tele_op_l2_client_cmd_pre = 0;
 
-        int xian_dj_robotgo1_controller_l2_cmd_pre = 0;
-        int xian_dj_robotgo1_controller_l2_cmd_cur = 0;
+        int xian_dj_tele_op_r1_client_cmd_cur = 0;
+        int xian_dj_tele_op_r2_client_cmd_cur = 0;
+        int xian_dj_tele_op_l1_client_cmd_cur = 0;
+        int xian_dj_tele_op_l2_client_cmd_cur = 0;
 
-        int xian_dj_robotgo1_controller_l1_cmd_pre = 0;
-        int xian_dj_robotgo1_controller_l1_cmd_cur = 0;
+        int xian_dj_local_controller_r1_cmd_pre = 0;
+        int xian_dj_local_controller_r2_cmd_pre = 0;
+        int xian_dj_local_controller_l1_cmd_pre = 0;
+        int xian_dj_local_controller_l2_cmd_pre = 0;
 
-        int xian_dj_robotgo1_controller_r1_cmd_pre = 0;
-        int xian_dj_robotgo1_controller_r1_cmd_cur = 0;
+        int xian_dj_local_controller_r1_cmd_cur = 0;
+        int xian_dj_local_controller_r2_cmd_cur = 0;
+        int xian_dj_local_controller_l1_cmd_cur = 0;
+        int xian_dj_local_controller_l2_cmd_cur = 0;
+        
 };
 
 int main(int argc, char** argv)

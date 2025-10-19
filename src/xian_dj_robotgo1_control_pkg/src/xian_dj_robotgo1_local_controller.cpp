@@ -112,7 +112,7 @@ class XianDjRobotgo1LocalController
         int xian_dj_local_controller_b_cmd = 0;
         int xian_dj_local_controller_y_cmd = 0;
         int xian_dj_local_controller_a_cmd = 0;
-;
+
         double xian_dj_local_controller_left_rocker_x_cmd = 0;
         double xian_dj_local_controller_left_rocker_y_cmd = 0;
         double xian_dj_local_controller_right_rocker_x_cmd = 0;

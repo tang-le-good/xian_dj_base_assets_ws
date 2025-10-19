@@ -212,3 +212,15 @@ target_link_libraries(xian_dj_robotgo1_local_controller ${catkin_LIBRARIES})
 add_executable(xian_dj_robotgo1_switch_mode src/xian_dj_robotgo1_switch_mode.cpp )
 add_dependencies(xian_dj_robotgo1_switch_mode ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(xian_dj_robotgo1_switch_mode ${catkin_LIBRARIES})
+
+add_executable(xian_dj_robotgo1_state_display src/xian_dj_robotgo1_state_display.cpp )
+add_dependencies(xian_dj_robotgo1_state_display ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(xian_dj_robotgo1_state_display ${catkin_LIBRARIES})
+
+add_executable(xian_dj_robotgo1_error_monitor src/xian_dj_robotgo1_error_monitor.cpp )
+add_dependencies(xian_dj_robotgo1_error_monitor ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(xian_dj_robotgo1_error_monitor ${catkin_LIBRARIES})
+
+add_executable(xian_dj_robotgo1_control src/xian_dj_robotgo1_control.cpp )
+add_dependencies(xian_dj_robotgo1_control ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(xian_dj_robotgo1_control ${catkin_LIBRARIES})

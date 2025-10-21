@@ -11,7 +11,16 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  image_transport
+  cv_bridge
+  sensor_msgs
 )
+
+find_package(OpenCV REQUIRED)
+
+# 设置 MVCAM 路径
+set(MVCAM_INCLUDE_DIR "/opt/MVS/include")
+set(MVCAM_LIB_DIR "$ENV{MVCAM_COMMON_RUNENV}/aarch64")
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -107,6 +116,7 @@ catkin_package(
 #  LIBRARIES xian_dj_visual_platform_control_pkg
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
+  CATKIN_DEPENDS roscpp image_transport cv_bridge
 )
 
 ###########
@@ -118,6 +128,8 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${MVCAM_INCLUDE_DIR}
 )
 
 ## Declare a C++ library
@@ -204,3 +216,61 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+
+add_executable(xian_dj_visual_platform_mv_cs016_10gc_color_ros_topic src/xian_dj_visual_platform_mv_cs016_10gc_color_ros_topic.cpp )
+target_include_directories(xian_dj_visual_platform_mv_cs016_10gc_color_ros_topic 
+                           PRIVATE ${catkin_INCLUDE_DIRS}
+                           PRIVATE ${OpenCV_INCLUDE_DIRS}
+                           PRIVATE ${MVCAM_INCLUDE_DIR})
+target_link_directories(xian_dj_visual_platform_mv_cs016_10gc_color_ros_topic PRIVATE ${MVCAM_LIB_DIR})
+target_link_libraries(xian_dj_visual_platform_mv_cs016_10gc_color_ros_topic 
+                      ${catkin_LIBRARIES} 
+                      ${OpenCV_LIBRARIES} 
+                      pthread
+                      MvCameraControl)
+add_dependencies(xian_dj_visual_platform_mv_cs016_10gc_color_ros_topic 
+                 ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+                 ${catkin_EXPORTED_TARGETS})
+
+
+add_executable(xian_dj_visual_platform_mv_cs016_10gc_color_ros_sub 
+               src/xian_dj_visual_platform_mv_cs016_10gc_color_ros_sub.cpp )
+target_include_directories(xian_dj_visual_platform_mv_cs016_10gc_color_ros_sub 
+                           PRIVATE ${catkin_INCLUDE_DIRS}
+                           PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(xian_dj_visual_platform_mv_cs016_10gc_color_ros_sub 
+                      ${catkin_LIBRARIES} 
+                      ${OpenCV_LIBRARIES})
+add_dependencies(xian_dj_visual_platform_mv_cs016_10gc_color_ros_sub 
+                 ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+                 ${catkin_EXPORTED_TARGETS})
+
+
+
+add_executable(xian_dj_visual_platform_mv_cs016_10gc_color_tcp_server src/xian_dj_visual_platform_mv_cs016_10gc_color_tcp_server.cpp )
+target_include_directories(xian_dj_visual_platform_mv_cs016_10gc_color_tcp_server 
+                           PRIVATE ${catkin_INCLUDE_DIRS}
+                           PRIVATE ${OpenCV_INCLUDE_DIRS}
+                           PRIVATE ${MVCAM_INCLUDE_DIR})
+target_link_directories(xian_dj_visual_platform_mv_cs016_10gc_color_tcp_server PRIVATE ${MVCAM_LIB_DIR})
+target_link_libraries(xian_dj_visual_platform_mv_cs016_10gc_color_tcp_server 
+                      ${catkin_LIBRARIES} 
+                      ${OpenCV_LIBRARIES} 
+                      pthread
+                      MvCameraControl)
+add_dependencies(xian_dj_visual_platform_mv_cs016_10gc_color_tcp_server 
+                 ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+                 ${catkin_EXPORTED_TARGETS})
+                
+add_executable(xian_dj_visual_platform_mv_cs016_10gc_color_tcp_client 
+               src/xian_dj_visual_platform_mv_cs016_10gc_color_tcp_client.cpp )
+target_include_directories(xian_dj_visual_platform_mv_cs016_10gc_color_tcp_client 
+                           PRIVATE ${catkin_INCLUDE_DIRS}
+                           PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(xian_dj_visual_platform_mv_cs016_10gc_color_tcp_client 
+                      ${catkin_LIBRARIES} 
+                      ${OpenCV_LIBRARIES})
+add_dependencies(xian_dj_visual_platform_mv_cs016_10gc_color_tcp_client 
+                 ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+                 ${catkin_EXPORTED_TARGETS})

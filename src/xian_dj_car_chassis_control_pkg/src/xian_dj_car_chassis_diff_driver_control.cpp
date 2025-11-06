@@ -16,23 +16,23 @@ class XianDjCarChassisDiffDriverControl
 
         void m_timer_heart_beat_func(const ros::WallTimerEvent& event)
         {
-            ros::param::get("/xian_dj_car_chassis_param_pkg/xian_dj_car_chassis_diff_driver_control_heart_beat", xian_dj_car_chassis_diff_driver_control_heart_beat); 
+            ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_diff_driver_control_heart_beat", xian_dj_car_chassis_diff_driver_control_heart_beat); 
             std::cout << "xian_dj_car_chassis_diff_driver_control_heart_beat: " << xian_dj_car_chassis_diff_driver_control_heart_beat << std::endl;
             counter = counter > 1000 ? 0 : (counter + 1);
-            ros::param::set("/xian_dj_car_chassis_param_pkg/xian_dj_car_chassis_diff_driver_control_heart_beat", counter);  // 自行替换
+            ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_diff_driver_control_heart_beat", counter);  // 自行替换
         }
 
         void m_timer_control_func(const ros::WallTimerEvent& event)
         {
-            ros::param::get("/xian_dj_car_chassis_param_pkg/xian_dj_car_chassis_diff_driver_control_error", xian_dj_car_chassis_diff_driver_control_error); 
+            ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_diff_driver_control_error", xian_dj_car_chassis_diff_driver_control_error); 
             if(xian_dj_car_chassis_diff_driver_control_error != 0)
             {
                 // 什么也不用做，等待
             }
             else
             {
-                ros::param::get("/xian_dj_car_chassis_param_pkg/input_velocity_cmd", input_velocity_cmd); 
-                ros::param::get("/xian_dj_car_chassis_param_pkg/input_theta_cmd", input_theta_cmd); 
+                ros::param::get("/xian_dj_car_chassis_params_server/input_velocity_cmd", input_velocity_cmd); 
+                ros::param::get("/xian_dj_car_chassis_params_server/input_theta_cmd", input_theta_cmd); 
                 input_velocity = input_velocity_cmd;
                 input_theta = input_theta_cmd;
                 delta_v1c = input_velocity;
@@ -42,8 +42,8 @@ class XianDjCarChassisDiffDriverControl
                 xian_dj_car_chassis_delta_theta1c = delta_theta_1;
                 xian_dj_car_chassis_delta_theta2c = delta_theta_2;
 
-                ros::param::set("/xian_dj_car_chassis_param_pkg/xian_dj_car_chassis_delta_theta1c", xian_dj_car_chassis_delta_theta1c); 
-                ros::param::set("/xian_dj_car_chassis_param_pkg/xian_dj_car_chassis_delta_theta2c", xian_dj_car_chassis_delta_theta2c); 
+                ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_delta_theta1c", xian_dj_car_chassis_delta_theta1c); 
+                ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_delta_theta2c", xian_dj_car_chassis_delta_theta2c); 
             }
         }
 

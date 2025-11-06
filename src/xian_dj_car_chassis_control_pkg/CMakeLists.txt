@@ -214,3 +214,7 @@ target_link_libraries(xian_dj_car_chassis_diff_driver_control ${catkin_LIBRARIES
 add_executable(xian_dj_car_two_wheel_diff_drive_odometry src/xian_dj_car_two_wheel_diff_drive_odometry.cpp )
 add_dependencies(xian_dj_car_two_wheel_diff_drive_odometry ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(xian_dj_car_two_wheel_diff_drive_odometry ${catkin_LIBRARIES})
+
+add_executable(xian_dj_car_chassis_base_electric src/xian_dj_car_chassis_base_electric.cpp )
+add_dependencies(xian_dj_car_chassis_base_electric ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(xian_dj_car_chassis_base_electric ${catkin_LIBRARIES})

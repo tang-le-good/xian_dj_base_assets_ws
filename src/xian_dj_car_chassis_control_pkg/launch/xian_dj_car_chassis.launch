@@ -2,18 +2,23 @@
 <launch>
     <node name ="xian_dj_car_chassis_params_server" pkg="xian_dj_car_chassis_param_pkg" type="xian_dj_car_chassis_params_server" />
     <!-- 启动左电机驱动 -->
-    <!-- <node name="xian_dj_car_chassis_base_electric_left_wheel" pkg="xian_dj_car_chassis_control_pkg" type="xian_dj_car_chassis_base_electric" output="screen">
+    <node name="xian_dj_car_chassis_base_electric_left_wheel" pkg="xian_dj_car_chassis_control_pkg" type="xian_dj_car_chassis_base_electric" output="screen">
         <param name="server_ip" value="192.168.1.132" />
-        <param name="server_port" value="7886" />
+        <param name="server_port" value="8886" />
         <param name="motor_driver" value="left_driver" />
-    </node> -->
+    </node>
 
     <!-- 启动右电机驱动 -->
-    <!-- <node name="xian_dj_car_chassis_base_electric_right_wheel" pkg="xian_dj_car_chassis_control_pkg" type="xian_dj_car_chassis_base_electric" output="screen">
+    <node name="xian_dj_car_chassis_base_electric_right_wheel" pkg="xian_dj_car_chassis_control_pkg" type="xian_dj_car_chassis_base_electric" output="screen">
         <param name="server_ip" value="192.168.1.133" />
-        <param name="server_port" value="7886" />
+        <param name="server_port" value="8886" />
         <param name="motor_driver" value="right_driver" />
-    </node> -->
+    </node>
 
-    <!-- rosrun xian_dj_car_chassis_control_pkg xian_dj_car_chassis_base_electric _server_ip:="192.168.1.132" _server_port:=7886 _motor_driver:="left_driver" -->
+    <node name ="xian_dj_car_chassis_diff_driver_control" pkg="xian_dj_car_chassis_control_pkg" type="xian_dj_car_chassis_diff_driver_control" />
+    
+
+
+    <!-- rosrun xian_dj_car_chassis_control_pkg xian_dj_car_chassis_base_electric _server_ip:="192.168.1.132" _server_port:=8886 _motor_driver:="left_driver" -->
+    <!-- rosrun xian_dj_car_chassis_control_pkg xian_dj_car_chassis_base_electric _server_ip:="192.168.1.133" _server_port:=8886 _motor_driver:="right_driver" -->
 </launch>

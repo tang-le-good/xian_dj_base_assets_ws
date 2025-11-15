@@ -8,7 +8,7 @@ class XianDjCarChassisDiffDriverControl
         XianDjCarChassisDiffDriverControl()
         {
             // 创建一个ROS节点句柄
-            ros::NodeHandle nh;
+            // ros::NodeHandle nh;
         }
 
         ros::WallTimer m_timer_heart_beat;
@@ -42,8 +42,8 @@ class XianDjCarChassisDiffDriverControl
                 xian_dj_car_chassis_delta_theta1c = delta_theta_1;
                 xian_dj_car_chassis_delta_theta2c = delta_theta_2;
 
-                ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_delta_theta1c", xian_dj_car_chassis_delta_theta1c); 
-                ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_delta_theta2c", xian_dj_car_chassis_delta_theta2c); 
+                ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_left_wheel_write_velocity", xian_dj_car_chassis_delta_theta1c); 
+                ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_right_wheel_write_velocity", xian_dj_car_chassis_delta_theta2c); 
             }
         }
 
@@ -64,6 +64,8 @@ class XianDjCarChassisDiffDriverControl
         //输出量
         double xian_dj_car_chassis_delta_theta1c = 0;
         double xian_dj_car_chassis_delta_theta2c = 0;
+        int xian_dj_car_chassis_left_wheel_write_velocity=0;
+        int xian_dj_car_chassis_right_wheel_write_velocity=0;
         
         int xian_dj_car_chassis_diff_driver_control_error = 0;
 

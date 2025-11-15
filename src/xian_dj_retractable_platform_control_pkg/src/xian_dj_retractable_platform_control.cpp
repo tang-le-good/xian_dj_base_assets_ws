@@ -8,7 +8,7 @@ class XianDjRetractablePlatformControl
         XianDjRetractablePlatformControl()
         {
             // 创建一个ROS节点句柄
-            ros::NodeHandle nh;
+            // ros::NodeHandle nh;
         }
 
         ros::WallTimer m_timer_heart_beat;
@@ -39,14 +39,14 @@ class XianDjRetractablePlatformControl
                 ros::param::get("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_second_linear_actuator_down_cmd", xian_dj_retractable_platform_second_linear_actuator_down_cmd);
 
                 // 控制倒伏伸缩杆运动状态
-                if (xian_dj_retractable_platform_stand_linear_actuator_stand_cmd==1 || xian_dj_retractable_platform_stand_linear_actuator_sit_cmd==0)
+                if (xian_dj_retractable_platform_stand_linear_actuator_stand_cmd==1 && xian_dj_retractable_platform_stand_linear_actuator_sit_cmd==0)
                 {
                     ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_stand_linear_actuator_enble", 1);
                     ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_stand_linear_actuator_move", 1);
                 }
                 else
                 {
-                    if (xian_dj_retractable_platform_stand_linear_actuator_stand_cmd==0 || xian_dj_retractable_platform_stand_linear_actuator_sit_cmd==1)
+                    if (xian_dj_retractable_platform_stand_linear_actuator_stand_cmd==0 && xian_dj_retractable_platform_stand_linear_actuator_sit_cmd==1)
                     {
                         ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_stand_linear_actuator_enble", 1);
                         ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_stand_linear_actuator_move", 0);
@@ -59,14 +59,14 @@ class XianDjRetractablePlatformControl
                 }
 
                 // 控制一级伸缩杆运动状态
-                if (xian_dj_retractable_platform_first_linear_actuator_up_cmd==1 || xian_dj_retractable_platform_first_linear_actuator_down_cmd==0)
+                if (xian_dj_retractable_platform_first_linear_actuator_up_cmd==1 && xian_dj_retractable_platform_first_linear_actuator_down_cmd==0)
                 {
                     ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_first_linear_actuator_enble", 1);
                     ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_first_linear_actuator_move", 1);
                 }
                 else
                 {
-                    if (xian_dj_retractable_platform_first_linear_actuator_up_cmd==0 || xian_dj_retractable_platform_first_linear_actuator_down_cmd==1)
+                    if (xian_dj_retractable_platform_first_linear_actuator_up_cmd==0 && xian_dj_retractable_platform_first_linear_actuator_down_cmd==1)
                     {
                         ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_first_linear_actuator_enble", 1);
                         ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_first_linear_actuator_move", 0);
@@ -79,14 +79,14 @@ class XianDjRetractablePlatformControl
                 }
 
                 // 控制二级伸缩杆运动状态
-                if (xian_dj_retractable_platform_second_linear_actuator_up_cmd==1 || xian_dj_retractable_platform_second_linear_actuator_down_cmd==0)
+                if (xian_dj_retractable_platform_second_linear_actuator_up_cmd==1 && xian_dj_retractable_platform_second_linear_actuator_down_cmd==0)
                 {
                     ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_second_linear_actuator_enble", 1);
                     ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_second_linear_actuator_move", 1);
                 }
                 else
                 {
-                    if (xian_dj_retractable_platform_second_linear_actuator_up_cmd==0 || xian_dj_retractable_platform_second_linear_actuator_down_cmd==1)
+                    if (xian_dj_retractable_platform_second_linear_actuator_up_cmd==0 && xian_dj_retractable_platform_second_linear_actuator_down_cmd==1)
                     {
                         ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_second_linear_actuator_enble", 1);
                         ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_second_linear_actuator_move", 0);

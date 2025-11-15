@@ -163,18 +163,40 @@ class TCPClient
         
         bool receiveData(server2client& server_data) 
         {
+            // 设置文件描述符集合
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(sockfd, &readfds);
             
+            // 设置3秒超时
+            struct timeval timeout;
+            timeout.tv_sec = 3;
+            timeout.tv_usec = 0;
+            
+            // 等待socket可读
+            int select_result = select(sockfd + 1, &readfds, NULL, NULL, &timeout);
+            
+            if (select_result == 0) {
+                std::cerr << "接收数据超时（3秒）" << std::endl;
+                // connected = false;
+                return false;
+            } else if (select_result < 0) {
+                std::cerr << "select错误: " << strerror(errno) << std::endl;
+                // connected = false;
+                return false;
+            }
+            
+            // 有数据可读，正常接收
             int recv_len = recv(sockfd, &server_data, sizeof(server_data), 0);
             
-            if (recv_len <= 0) 
-            {
+            if (recv_len <= 0) {
                 std::cerr << "接收数据失败或连接已关闭" << std::endl;
                 connected = false;
                 return false;
             }
             
-            // response.assign(server_data, recv_len);
             return true;
+
         }
         
         bool isConnected() const 
@@ -208,24 +230,36 @@ class XianDjCarChassisBaseElectric
             client_address_5 = 0x01; 
             tcp_server_date = this->command_callback(client_address_0, client_address_1,client_address_2,
                                                      client_address_3, client_address_4,client_address_5);
-            unsigned char state_low = *(tcp_server_date+4);
-            auto result = convertByteToBools(state_low);
-            printf("运行状态： %d, 过流： %d, 过压： %d, 编码器故障： %d, 位置偏差过大： %d, 欠压： %d, 过载标志： %d, 外部控制标志： %d  \n",
-                            result[0], result[1],result[2],result[3],result[4],result[5],result[6],result[7]);
-            
-            if(result[0]==0) // 如果没有使能
+            if(tcp_server_date!=nullptr)
             {
-                // enable
-                client_address_0 = 0x02; 
-                client_address_1 = 0x06;
-                client_address_2 = 0x00; 
-                client_address_3 = 0x00; 
-                client_address_4 = 0x00;
-                client_address_5 = 0x01; 
+                unsigned char state_low = *(tcp_server_date+4);
+                auto result = convertByteToBools(state_low);
+                printf("运行状态： %d, 过流： %d, 过压： %d, 编码器故障： %d, 位置偏差过大： %d, 欠压： %d, 过载标志： %d, 外部控制标志： %d  \n",
+                                result[0], result[1],result[2],result[3],result[4],result[5],result[6],result[7]);
                 
-                tcp_server_date = this->command_callback(client_address_0, client_address_1,client_address_2,
-                                                        client_address_3, client_address_4,client_address_5);
+                if(result[0]==0) // 如果没有使能
+                {
+                    client_address_0 = 0x02; 
+                    client_address_1 = 0x06;
+                    client_address_2 = 0x00; 
+                    client_address_3 = 0x10; 
+                    client_address_4 = 0x00;
+                    client_address_5 = 0x00; 
+                    tcp_server_date = this->command_callback(client_address_0, client_address_1,client_address_2,
+                                                            client_address_3, client_address_4,client_address_5);
+                    // enable
+                    client_address_0 = 0x02; 
+                    client_address_1 = 0x06;
+                    client_address_2 = 0x00; 
+                    client_address_3 = 0x00; 
+                    client_address_4 = 0x00;
+                    client_address_5 = 0x01; 
+                    
+                    tcp_server_date = this->command_callback(client_address_0, client_address_1,client_address_2,
+                                                            client_address_3, client_address_4,client_address_5);
+                }
             }
+            
 
             // velocity_read
             client_address_0 = 0x02; 
@@ -236,10 +270,15 @@ class XianDjCarChassisBaseElectric
             client_address_5 = 0x01; 
             tcp_server_date = this->command_callback(client_address_0, client_address_1,client_address_2,
                                                      client_address_3, client_address_4,client_address_5);
-            unsigned char velocity_read_high = *(tcp_server_date+3);
-            unsigned char velocity_read_low = *(tcp_server_date+4);
-            int velocity_read = combineBytes(velocity_read_high, velocity_read_low);
-            printf("读取速度 : %d \n", velocity_read);
+            int velocity_read = 0;
+            if(tcp_server_date!=nullptr)
+            {
+                unsigned char velocity_read_high = *(tcp_server_date+3);
+                unsigned char velocity_read_low = *(tcp_server_date+4);
+                velocity_read = combineBytes(velocity_read_high, velocity_read_low);
+                printf("读取速度 : %d \n", velocity_read);
+            }
+            
 
             // velocity_write
             ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_left_wheel_write_velocity", xian_dj_car_chassis_left_wheel_write_velocity); 
@@ -267,25 +306,74 @@ class XianDjCarChassisBaseElectric
             tcp_server_date = this->command_callback(client_address_0, client_address_1,client_address_2,
                                                      client_address_3, client_address_4,client_address_5);
 
-            
-            // printf("Tcp Server Data: 0: %X, 1: %X, 2: %X, 3: %X, 4: %X, 5: %X \n", *(tcp_server_date+0), 
-            //                                                                         *(tcp_server_date+1),
-            //                                                                         *(tcp_server_date+2),
-            //                                                                         *(tcp_server_date+3),
-            //                                                                         *(tcp_server_date+4),
-            //                                                                         *(tcp_server_date+5)
-            //                                                                         );
+            if(tcp_server_date!=nullptr)
+            {
+                // printf("Tcp Server Data: 0: %X, 1: %X, 2: %X, 3: %X, 4: %X, 5: %X \n", *(tcp_server_date+0), 
+                //                                                                         *(tcp_server_date+1),
+                //                                                                         *(tcp_server_date+2),
+                //                                                                         *(tcp_server_date+3),
+                //                                                                         *(tcp_server_date+4),
+                //                                                                         *(tcp_server_date+5)
+                //                                                                         );
+            }
         }
         void m_timer_HeartBeat_f(const ros::WallTimerEvent& event)
         {
-            ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_heart_beat", xian_dj_car_chassis_base_electric_heart_beat); 
-            std::cout << "xian_dj_car_chassis_base_electric_heart_beat: " << xian_dj_car_chassis_base_electric_heart_beat << std::endl;
-            counter = counter > 1000 ? 0 : (counter + 1);
-            ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_heart_beat", counter);  
+            date_recive_counter_pre = date_recive_counter_cur;
+            date_recive_counter_cur = date_recive_counter;
+
+            if(date_recive_counter_pre == date_recive_counter_cur)
+            {
+                timeout_counter += 1;
+                timeout_counter = timeout_counter > 1000 ? 5 : (timeout_counter + 1);
+            }
+            else
+            {
+                timeout_counter = 0;
+            }
+            if(timeout_counter >= 5)
+            {
+                if(motor_driver_ == "left_driver")
+                {
+                    ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_left_heart_beat", xian_dj_car_chassis_base_electric_left_heart_beat); 
+                    std::cout << "xian_dj_car_chassis_base_electric_left_heart_beat: " << xian_dj_car_chassis_base_electric_left_heart_beat << std::endl;
+                    counter = 0;
+                    ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_left_heart_beat", counter); 
+                }
+                else if(motor_driver_ == "right_driver")
+                {
+                    ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_right_heart_beat", xian_dj_car_chassis_base_electric_right_heart_beat); 
+                    std::cout << "xian_dj_car_chassis_base_electric_right_heart_beat: " << xian_dj_car_chassis_base_electric_right_heart_beat << std::endl;
+                    counter = 0;
+                    ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_right_heart_beat", counter);
+                }  
+            }
+            else
+            {
+                if(motor_driver_ == "left_driver")
+                {
+                    ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_left_heart_beat", xian_dj_car_chassis_base_electric_left_heart_beat); 
+                    std::cout << "xian_dj_car_chassis_base_electric_left_heart_beat: " << xian_dj_car_chassis_base_electric_left_heart_beat << std::endl;
+                    counter = counter > 1000 ? 0 : (counter + 1);
+                    ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_left_heart_beat", counter); 
+                }
+                else if(motor_driver_ == "right_driver")
+                {
+                    ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_right_heart_beat", xian_dj_car_chassis_base_electric_right_heart_beat); 
+                    std::cout << "xian_dj_car_chassis_base_electric_right_heart_beat: " << xian_dj_car_chassis_base_electric_right_heart_beat << std::endl;
+                    counter = counter > 1000 ? 0 : (counter + 1);
+                    ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_right_heart_beat", counter);
+                } 
+            }
         }
     private:
         int counter = 0;
-        int xian_dj_car_chassis_base_electric_heart_beat = 0;
+        int date_recive_counter = 0;
+        int timeout_counter = 0;
+        int date_recive_counter_cur = 0;
+        int date_recive_counter_pre = 0;
+        int xian_dj_car_chassis_base_electric_left_heart_beat = 0;
+        int xian_dj_car_chassis_base_electric_right_heart_beat = 0;
         std::string server_ip_;
         std::string motor_driver_;
         int server_port_;
@@ -361,34 +449,29 @@ class XianDjCarChassisBaseElectric
             {
                 return 0x00;
             }
-            
-            // 接收响应
+
+            // 接收响应（带3秒超时）
             if (client.receiveData(server_data)) 
             {
-                // printf("Recived from server:  address_0=%X, address_1=%X, address_2=%X, address_3=%X, address_4=%X, address_5=%X, address_6=%X, address_7=%X \n", 
-                //         server_data.address_0,
-                //         server_data.address_1,
-                //         server_data.address_2,
-                //         server_data.address_3,
-                //         server_data.address_4,
-                //         server_data.address_5,
-                //         server_data.address_6,
-                //         server_data.address_7);
-            }
-            else
-            {
-                return 0x00;
-            }
-            tcp_date[0] = server_data.address_0;
-            tcp_date[1] = server_data.address_1;
-            tcp_date[2] = server_data.address_2;
-            tcp_date[3] = server_data.address_3;
-            tcp_date[4] = server_data.address_4;
-            tcp_date[5] = server_data.address_5;
-            tcp_date[6] = server_data.address_6;
-            tcp_date[7] = server_data.address_7;
+                date_recive_counter = date_recive_counter > 1000 ? 0 : (date_recive_counter + 1);
+                printf("date_recive_counter:%d \n", date_recive_counter);
+                
+                tcp_date[0] = server_data.address_0;
+                tcp_date[1] = server_data.address_1;
+                tcp_date[2] = server_data.address_2;
+                tcp_date[3] = server_data.address_3;
+                tcp_date[4] = server_data.address_4;
+                tcp_date[5] = server_data.address_5;
+                tcp_date[6] = server_data.address_6;
+                tcp_date[7] = server_data.address_7;
 
-            return tcp_date;
+                return tcp_date;
+            } 
+            else 
+            {
+                // 3秒超时后会执行到这里                
+                return nullptr;
+            }
         }
 
         // CRC校验

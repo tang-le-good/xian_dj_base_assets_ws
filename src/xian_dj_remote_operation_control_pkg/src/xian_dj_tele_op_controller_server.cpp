@@ -240,7 +240,7 @@ class XianDjTeleOpControllerServer
         XianDjTeleOpControllerServer()
         {
             // 创建一个ROS节点句柄
-            ros::NodeHandle nh;
+            // ros::NodeHandle nh;
 
             // 启动服务器
             if (!server.start()) 

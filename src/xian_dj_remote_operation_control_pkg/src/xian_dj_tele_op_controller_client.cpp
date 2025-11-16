@@ -12,7 +12,7 @@
 #include <thread>
 #include <chrono>
 
-#define SERVER_IP "127.0.0.1"
+#define SERVER_IP "192.168.1.12"
 #define SERVER_PORT 3241
 #define MAX_RETRY 900000000 
 #define RETRY_INTERVAL 3 // 重试间隔(秒)     3秒重连1次，900000000次，时间大概是10年
@@ -254,6 +254,23 @@ class XianDjTeleOpControllerClient
             xian_dj_tele_op_r2_client_cmd = Joy->buttons[9];
             xian_dj_tele_op_l1_client_cmd = Joy->buttons[6];
             xian_dj_tele_op_l2_client_cmd = Joy->buttons[8];
+           
+            printf("xian_dj_tele_op_x_client_cmd: %d\n", xian_dj_tele_op_x_client_cmd);
+            printf("xian_dj_tele_op_b_client_cmd: %d\n", xian_dj_tele_op_b_client_cmd);
+            printf("xian_dj_tele_op_y_client_cmd: %d\n", xian_dj_tele_op_y_client_cmd);
+            printf("xian_dj_tele_op_a_client_cmd: %d\n", xian_dj_tele_op_a_client_cmd);
+            printf("xian_dj_tele_op_left_rocker_x_client_cmd: %.2f\n", xian_dj_tele_op_left_rocker_x_client_cmd);
+            printf("xian_dj_tele_op_left_rocker_y_client_cmd: %.2f\n", xian_dj_tele_op_left_rocker_y_client_cmd);
+            printf("xian_dj_tele_op_right_rocker_x_client_cmd: %.2f\n", xian_dj_tele_op_right_rocker_x_client_cmd);
+            printf("xian_dj_tele_op_right_rocker_y_client_cmd: %.2f\n", xian_dj_tele_op_right_rocker_y_client_cmd);
+            printf("xian_dj_tele_op_r1_client_cmd: %d\n", xian_dj_tele_op_r1_client_cmd);
+            printf("xian_dj_tele_op_r2_client_cmd: %d\n", xian_dj_tele_op_r2_client_cmd);
+            printf("xian_dj_tele_op_l1_client_cmd: %d\n", xian_dj_tele_op_l1_client_cmd);
+            printf("xian_dj_tele_op_l2_client_cmd: %d\n", xian_dj_tele_op_l2_client_cmd);
+            printf("xian_dj_tele_op_left_client_cmd: %d\n", xian_dj_tele_op_left_client_cmd);
+            printf("xian_dj_tele_op_right_client_cmd: %d\n", xian_dj_tele_op_right_client_cmd);
+            printf("xian_dj_tele_op_up_client_cmd: %d\n", xian_dj_tele_op_up_client_cmd);
+            printf("xian_dj_tele_op_down_client_cmd: %d\n", xian_dj_tele_op_down_client_cmd);
         }
 
     private:

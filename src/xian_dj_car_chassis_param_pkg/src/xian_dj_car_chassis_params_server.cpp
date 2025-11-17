@@ -21,8 +21,8 @@ int main(int argc, char** argv)
     while(ros::ok())
     {
         usleep(1000 * 1000); // 1000 ms
-        ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_car_chassis_params_server_heart_beat", counter); // 原始检测结果
-        ros::param::get("/xian_dj_retractable_platform_params_server/xian_dj_car_chassis_params_server_heart_beat", xian_dj_car_chassis_params_server_heart_beat);
+        ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_params_server_heart_beat", counter); // 原始检测结果
+        ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_params_server_heart_beat", xian_dj_car_chassis_params_server_heart_beat);
         std::cout << "xian_dj_car_chassis_params_server_heart_beat:" << xian_dj_car_chassis_params_server_heart_beat << std::endl;
         if(counter > 1000)
         {

@@ -2,4 +2,7 @@
 <launch>
     <node name ="xian_dj_tele_op_params_server" pkg="xian_dj_remote_operation_param_pkg" type="xian_dj_tele_op_params_server" />
     <node name ="xian_dj_tele_op_controller_server" pkg="xian_dj_remote_operation_control_pkg" type="xian_dj_tele_op_controller_server" />
+    <node name ="xian_dj_tele_op_back_end" pkg="xian_dj_remote_operation_control_pkg" type="xian_dj_tele_op_back_end" />
+    <!-- <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
+    </include> -->
 </launch>

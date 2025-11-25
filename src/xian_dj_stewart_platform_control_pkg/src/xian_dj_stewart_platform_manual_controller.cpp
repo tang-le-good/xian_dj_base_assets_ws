@@ -9,8 +9,8 @@ class XianDjStewartPlatformManualControl
         XianDjStewartPlatformManualControl()
         {
             // 创建一个ROS节点句柄
-            ros::NodeHandle nh;
-            joy_sub = nh.subscribe<sensor_msgs::Joy>("joy", 10,&XianDjStewartPlatformManualControl::joyCallback, this);
+            // ros::NodeHandle nh;
+            // joy_sub = nh.subscribe<sensor_msgs::Joy>("joy", 10,&XianDjStewartPlatformManualControl::joyCallback, this);
         }
 
         ros::WallTimer m_timer_heart_beat;
@@ -43,7 +43,7 @@ class XianDjStewartPlatformManualControl
             {
                 input_x += step_length;
             }
-            if(xian_dj_stewart_platform_input_x_negative_cmd == -1)
+            if(xian_dj_stewart_platform_input_x_negative_cmd == 1)
             {
                 input_x -= step_length;
             }
@@ -53,7 +53,7 @@ class XianDjStewartPlatformManualControl
             {
                 input_y += step_length;
             }
-            if(xian_dj_stewart_platform_input_y_negative_cmd == -1)
+            if(xian_dj_stewart_platform_input_y_negative_cmd == 1)
             {
                 input_y -= step_length;
             }
@@ -76,7 +76,7 @@ class XianDjStewartPlatformManualControl
             {
                 input_alpha += step_length;
             }
-            if(xian_dj_stewart_platform_input_alpha_negative_cmd == -1)
+            if(xian_dj_stewart_platform_input_alpha_negative_cmd == 1)
             {
                 input_alpha -= step_length;
             }
@@ -86,7 +86,7 @@ class XianDjStewartPlatformManualControl
             {
                 input_beta += step_length;
             }
-            if(xian_dj_stewart_platform_input_beta_negative_cmd == -1)
+            if(xian_dj_stewart_platform_input_beta_negative_cmd == 1)
             {
                 input_beta -= step_length;
             }
@@ -105,15 +105,15 @@ class XianDjStewartPlatformManualControl
             printf("input_alpha: %0.2f, input_beta: %0.2f, input_gamma: %0.2f \n", input_alpha, input_beta, input_gamma);
             
         }
-        void joySetup();
-        void joyCallback(const sensor_msgs::JoyConstPtr& msg)
-        {
-            Joy = msg;
-        }
+        // void joySetup();
+        // void joyCallback(const sensor_msgs::JoyConstPtr& msg)
+        // {
+        //     Joy = msg;
+        // }
 
     private:
-        sensor_msgs::JoyConstPtr Joy;
-        ros::Subscriber joy_sub;
+        // sensor_msgs::JoyConstPtr Joy;
+        // ros::Subscriber joy_sub;
 
         int counter = 0;
         int xian_dj_stewart_platform_manual_controller_heart_beat = 0;
@@ -123,7 +123,7 @@ class XianDjStewartPlatformManualControl
         double input_gamma = 0;
         double input_x = 0;
         double input_y = 0;
-        double input_z = 168;  //杆长为160时，动平台水平对应的Z高度
+        double input_z = 0;  //杆长为160时，动平台水平对应的Z高度
         double step_length = 0.25 ;
 
         double xian_dj_stewart_platform_input_alpha_cmd = 0;
@@ -160,7 +160,7 @@ int main(int argc, char** argv)
     spinner.start();
 
     xian_dj_stewart_platform_manual_controller.m_timer_heart_beat = nh_2.createWallTimer(ros::WallDuration(1.0), &XianDjStewartPlatformManualControl::m_timer_heart_beat_func, &xian_dj_stewart_platform_manual_controller);
-    xian_dj_stewart_platform_manual_controller.m_timer_control = nh_2.createWallTimer(ros::WallDuration(0.02), &XianDjStewartPlatformManualControl::m_timer_control_func, &xian_dj_stewart_platform_manual_controller);
+    xian_dj_stewart_platform_manual_controller.m_timer_control = nh_2.createWallTimer(ros::WallDuration(0.3), &XianDjStewartPlatformManualControl::m_timer_control_func, &xian_dj_stewart_platform_manual_controller);
     ros::waitForShutdown();
     
     // ros::spin();

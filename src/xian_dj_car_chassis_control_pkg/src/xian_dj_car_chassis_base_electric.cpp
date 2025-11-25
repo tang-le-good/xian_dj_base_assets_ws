@@ -234,8 +234,8 @@ class XianDjCarChassisBaseElectric
             {
                 unsigned char state_low = *(tcp_server_date+4);
                 auto result = convertByteToBools(state_low);
-                printf("运行状态： %d, 过流： %d, 过压： %d, 编码器故障： %d, 位置偏差过大： %d, 欠压： %d, 过载标志： %d, 外部控制标志： %d  \n",
-                                result[0], result[1],result[2],result[3],result[4],result[5],result[6],result[7]);
+                // printf("运行状态： %d, 过流： %d, 过压： %d, 编码器故障： %d, 位置偏差过大： %d, 欠压： %d, 过载标志： %d, 外部控制标志： %d  \n",
+                //                 result[0], result[1],result[2],result[3],result[4],result[5],result[6],result[7]);
                 
                 if(result[0]==0) // 如果没有使能
                 {
@@ -276,7 +276,7 @@ class XianDjCarChassisBaseElectric
                 unsigned char velocity_read_high = *(tcp_server_date+3);
                 unsigned char velocity_read_low = *(tcp_server_date+4);
                 velocity_read = combineBytes(velocity_read_high, velocity_read_low);
-                printf("读取速度 : %d \n", velocity_read);
+                // printf("读取速度 : %d \n", velocity_read);
             }
             
 
@@ -454,7 +454,7 @@ class XianDjCarChassisBaseElectric
             if (client.receiveData(server_data)) 
             {
                 date_recive_counter = date_recive_counter > 1000 ? 0 : (date_recive_counter + 1);
-                printf("date_recive_counter:%d \n", date_recive_counter);
+                // printf("date_recive_counter:%d \n", date_recive_counter);
                 
                 tcp_date[0] = server_data.address_0;
                 tcp_date[1] = server_data.address_1;
@@ -590,7 +590,7 @@ int main(int argc, char** argv)
     spinner.start();
 
     xian_dj_car_chassis_base_electric_node.m_timer_HeartBeat = nh_2.createWallTimer(ros::WallDuration(1), &XianDjCarChassisBaseElectric::m_timer_HeartBeat_f, &xian_dj_car_chassis_base_electric_node);
-    xian_dj_car_chassis_base_electric_node.m_timer_Main_Func = nh_2.createWallTimer(ros::WallDuration(0.02), &XianDjCarChassisBaseElectric::m_timer_Main_Func_f, &xian_dj_car_chassis_base_electric_node);
+    xian_dj_car_chassis_base_electric_node.m_timer_Main_Func = nh_2.createWallTimer(ros::WallDuration(0.2), &XianDjCarChassisBaseElectric::m_timer_Main_Func_f, &xian_dj_car_chassis_base_electric_node);
 
     ros::waitForShutdown();
 

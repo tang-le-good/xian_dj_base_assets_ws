@@ -1,4 +1,5 @@
 <launch>
+    <node name ="xian_dj_visual_platform_params_server" pkg="xian_dj_visual_platform_param_pkg" type="xian_dj_visual_platform_params_server" />
     <!-- 启动第一个相机节点（topic） -->
     <!-- <node name="xian_dj_visual_platform_mv_cs016_10gc_color_ros_topic_0" pkg="xian_dj_visual_platform_control_pkg" type="xian_dj_visual_platform_mv_cs016_10gc_color_ros_topic" output="screen">
         <param name="camera_index" value="0" />
@@ -6,8 +7,8 @@
     </node> -->
 
     <!-- 启动第一个相机节点（TCP server） -->
-    <node name="xian_dj_visual_platform_mv_cs016_10gc_color_tcp_server_0" pkg="xian_dj_visual_platform_control_pkg" type="xian_dj_visual_platform_mv_cs016_10gc_color_tcp_server" output="screen">
-        <param name="camera_index" value="0" />
+    <node name="xian_dj_visual_platform_mv_cs016_10gc_color_tcp_server_2" pkg="xian_dj_visual_platform_control_pkg" type="xian_dj_visual_platform_mv_cs016_10gc_color_tcp_server" output="screen">
+        <param name="camera_index" value="2" />
     </node>
 
 

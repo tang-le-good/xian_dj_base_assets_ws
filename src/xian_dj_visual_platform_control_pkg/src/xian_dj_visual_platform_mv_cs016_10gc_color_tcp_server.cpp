@@ -18,7 +18,7 @@
 #include <fcntl.h>  // 包含fcntl函数和相关宏的定义
 
 
-#define PORT 4068
+#define PORT 4069
 #define BACKLOG 128
 #define FRAME_WIDTH 1440
 #define FRAME_HEIGHT 1080

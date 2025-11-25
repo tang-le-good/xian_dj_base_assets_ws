@@ -14,7 +14,7 @@ class XianDjStewartPlatformControl
         XianDjStewartPlatformControl()
         {
             // 创建一个ROS节点句柄
-            ros::NodeHandle nh;
+            // ros::NodeHandle nh;
         }
             ros::WallTimer m_timer_heart_beat;
             ros::WallTimer m_timer_control;
@@ -42,6 +42,9 @@ class XianDjStewartPlatformControl
                 ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_x_cmd", input_x);
                 ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_y_cmd", input_y);
                 ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_z_cmd", input_z);
+                input_z = input_z + 168;
+                printf("input_alpha: %.02f input_beta: %.02f input_gamma: %.02f input_x: %.02f input_y: %.02f input_z: %.02f \n", 
+                                input_alpha, input_beta, input_gamma ,input_x ,input_y ,input_z);
 
                 // 求A_i
                 A_1 = R_z(theta_1, A_is, PI);
@@ -400,7 +403,8 @@ class XianDjStewartPlatformControl
         double input_gamma = 0;
         double input_x = 0;
         double input_y = 0;
-        double input_z = 100;
+        double input_z = 0;
+        double step_length = 0.2;
 
         // 传感器中心与动平台中心的偏差
         double sensor_offset_x = 0;
@@ -690,7 +694,7 @@ int main(int argc, char** argv)
     spinner.start();
 
     xian_dj_stewart_platform_control.m_timer_heart_beat = nh_2.createWallTimer(ros::WallDuration(1.0), &XianDjStewartPlatformControl::m_timer_heart_beat_func, &xian_dj_stewart_platform_control);
-    xian_dj_stewart_platform_control.m_timer_control = nh_2.createWallTimer(ros::WallDuration(0.02), &XianDjStewartPlatformControl::m_timer_control_func, &xian_dj_stewart_platform_control);
+    xian_dj_stewart_platform_control.m_timer_control = nh_2.createWallTimer(ros::WallDuration(0.3), &XianDjStewartPlatformControl::m_timer_control_func, &xian_dj_stewart_platform_control);
     ros::waitForShutdown();
     
     // ros::spin();

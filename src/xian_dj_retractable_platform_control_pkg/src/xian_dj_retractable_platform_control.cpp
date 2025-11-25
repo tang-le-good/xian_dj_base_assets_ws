@@ -11,19 +11,25 @@ class XianDjRetractablePlatformControl
             // ros::NodeHandle nh;
         }
 
-        ros::WallTimer m_timer_heart_beat;
+        // ros::WallTimer m_timer_heart_beat;
         ros::WallTimer m_timer_control;
 
-        void m_timer_heart_beat_func(const ros::WallTimerEvent& event)
+        // void m_timer_heart_beat_func(const ros::WallTimerEvent& event)
+        // {
+        //     ros::param::get("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_control_heart_beat", xian_dj_retractable_platform_control_heart_beat); 
+        //     std::cout << "xian_dj_retractable_platform_control_heart_beat: " << xian_dj_retractable_platform_control_heart_beat << std::endl;
+        //     counter = counter > 1000 ? 0 : (counter + 1);
+        //     ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_control_heart_beat", counter);  // 自行替换
+        // }
+
+        void m_timer_control_func(const ros::WallTimerEvent& event)
         {
             ros::param::get("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_control_heart_beat", xian_dj_retractable_platform_control_heart_beat); 
             std::cout << "xian_dj_retractable_platform_control_heart_beat: " << xian_dj_retractable_platform_control_heart_beat << std::endl;
             counter = counter > 1000 ? 0 : (counter + 1);
             ros::param::set("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_control_heart_beat", counter);  // 自行替换
-        }
 
-        void m_timer_control_func(const ros::WallTimerEvent& event)
-        {
+
             ros::param::get("/xian_dj_retractable_platform_params_server/xian_dj_retractable_platform_base_electric_error", xian_dj_retractable_platform_base_electric_error); 
             if(xian_dj_retractable_platform_base_electric_error != 0)
             {
@@ -132,8 +138,8 @@ int main(int argc, char** argv)
     ros::AsyncSpinner spinner(0);
     spinner.start();
 
-    xian_dj_retractable_platform_control.m_timer_heart_beat = nh_2.createWallTimer(ros::WallDuration(1.0), &XianDjRetractablePlatformControl::m_timer_heart_beat_func, &xian_dj_retractable_platform_control);
-    xian_dj_retractable_platform_control.m_timer_control = nh_2.createWallTimer(ros::WallDuration(0.02), &XianDjRetractablePlatformControl::m_timer_control_func, &xian_dj_retractable_platform_control);
+    // xian_dj_retractable_platform_control.m_timer_heart_beat = nh_2.createWallTimer(ros::WallDuration(1.0), &XianDjRetractablePlatformControl::m_timer_heart_beat_func, &xian_dj_retractable_platform_control);
+    xian_dj_retractable_platform_control.m_timer_control = nh_2.createWallTimer(ros::WallDuration(1), &XianDjRetractablePlatformControl::m_timer_control_func, &xian_dj_retractable_platform_control);
     ros::waitForShutdown();
     
     // ros::spin();

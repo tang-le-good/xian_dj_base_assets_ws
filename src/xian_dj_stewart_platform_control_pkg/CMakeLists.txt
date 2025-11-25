@@ -18,6 +18,8 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   sensor_msgs
   visualization_msgs
+  message_generation
+  message_runtime
 )
 
 ## System dependencies are found with CMake's conventions
@@ -54,11 +56,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  xian_dj_stewart_platform.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -75,10 +76,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -223,3 +224,7 @@ target_link_libraries(xian_dj_stewart_platform_error_monitor ${PCL_LIBRARIES} ${
 add_executable(xian_dj_stewart_platform_manual_controller src/xian_dj_stewart_platform_manual_controller.cpp )
 add_dependencies(xian_dj_stewart_platform_manual_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(xian_dj_stewart_platform_manual_controller ${PCL_LIBRARIES} ${catkin_LIBRARIES})
+
+add_executable(xian_dj_stewart_platform_back_end src/xian_dj_stewart_platform_back_end.cpp )
+add_dependencies(xian_dj_stewart_platform_back_end ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(xian_dj_stewart_platform_back_end ${PCL_LIBRARIES} ${catkin_LIBRARIES})

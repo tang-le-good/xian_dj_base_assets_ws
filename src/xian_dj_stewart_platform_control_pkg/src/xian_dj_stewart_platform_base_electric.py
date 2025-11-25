@@ -212,7 +212,7 @@ if __name__ == '__main__':
         tt = XianDjStewartPlatformBaseElectric()
         rospy.init_node('xian_dj_stewart_platform_base_electric', anonymous=True)  # 初始化ROS节点
         rospy.Timer(rospy.Duration(1), tt.xian_heat_beat_callback, oneshot=False) # 心跳线程
-        rospy.Timer(rospy.Duration(0.02), tt.xian_dj_stewart_platform_move_callback_fun, oneshot=False) # 控制舵臂转动线程
+        rospy.Timer(rospy.Duration(0.3), tt.xian_dj_stewart_platform_move_callback_fun, oneshot=False) # 控制舵臂转动线程
         rospy.spin()  # 添加这行确保节点持续运行
 
     except rospy.ROSInterruptException:

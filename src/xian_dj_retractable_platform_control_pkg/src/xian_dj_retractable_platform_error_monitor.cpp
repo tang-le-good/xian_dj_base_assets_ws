@@ -197,7 +197,7 @@ int main(int argc, char** argv)
     spinner.start();
 
     xian_dj_retractable_platform_error_monitor.m_timer_heart_beat = nh_2.createWallTimer(ros::WallDuration(1.0), &XianDjRetractablePlatformErrorMonitor::m_timer_heart_beat_func, &xian_dj_retractable_platform_error_monitor);
-    xian_dj_retractable_platform_error_monitor.m_timer_control = nh_2.createWallTimer(ros::WallDuration(0.02), &XianDjRetractablePlatformErrorMonitor::m_timer_control_func, &xian_dj_retractable_platform_error_monitor);
+    xian_dj_retractable_platform_error_monitor.m_timer_control = nh_2.createWallTimer(ros::WallDuration(1), &XianDjRetractablePlatformErrorMonitor::m_timer_control_func, &xian_dj_retractable_platform_error_monitor);
     ros::waitForShutdown();
     
     // ros::spin();

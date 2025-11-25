@@ -397,7 +397,7 @@ int main(int argc, char** argv)
     spinner.start();
 
     xian_dj_tele_op_controller_client.m_timer_heart_beat = nh_2.createWallTimer(ros::WallDuration(1.0), &XianDjTeleOpControllerClient::m_timer_heart_beat_func, &xian_dj_tele_op_controller_client);
-    xian_dj_tele_op_controller_client.m_timer_control = nh_2.createWallTimer(ros::WallDuration(0.02), &XianDjTeleOpControllerClient::m_timer_control_func, &xian_dj_tele_op_controller_client);
+    xian_dj_tele_op_controller_client.m_timer_control = nh_2.createWallTimer(ros::WallDuration(0.1), &XianDjTeleOpControllerClient::m_timer_control_func, &xian_dj_tele_op_controller_client);
     ros::waitForShutdown();
     
     // ros::spin();

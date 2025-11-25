@@ -10,134 +10,135 @@
 #include <ros/ros.h>
 #include <vector>
 
-#define SERVER_IP "192.168.1.12" // 替换为服务器实际IP
-#define SERVER_PORT 4068
-#define MAX_RETRY 900000000 
-#define RETRY_INTERVAL 3 // 重试间隔(秒)
-
-// 图像传输协议头
-struct ImageHeader 
+class TCPClient 
 {
-    uint32_t frame_size;
-    uint32_t frame_number;
-    uint64_t timestamp;
-};
+    private:
+        int sockfd;
+        struct sockaddr_in server_addr;
+        bool connected;
+        std::string server_ip_;
+        int port_;
+        int max_retry = 900000000;
+        int RETRY_INTERVAL = 3;
 
-class TCPClient {
-private:
-    int sockfd;
-    struct sockaddr_in server_addr;
-    bool connected;
-    
-public:
-    TCPClient() : sockfd(-1), connected(false) {
-        memset(&server_addr, 0, sizeof(server_addr));
-        server_addr.sin_family = AF_INET;
-        server_addr.sin_port = htons(SERVER_PORT);
+    public:
+        // 图像传输协议头
+        struct ImageHeader 
+        {
+            uint32_t frame_size;
+            uint32_t frame_number;
+            uint64_t timestamp;
+        };
         
-        if (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr) <= 0) {
-            std::cerr << "无效的地址或地址不支持" << std::endl;
+    public:
+        TCPClient(const std::string& server_ip, int port) : server_ip_(server_ip), port_(port), sockfd(-1), connected(false) {
+            memset(&server_addr, 0, sizeof(server_addr));
+            server_addr.sin_family = AF_INET;
+            server_addr.sin_port = htons(port_);
+            
+            if (inet_pton(AF_INET, server_ip_.c_str(), &server_addr.sin_addr) <= 0) {
+                std::cerr << "无效的地址或地址不支持" << std::endl;
+            }
         }
-    }
-    
-    ~TCPClient() 
-    {
-        disconnect();
-    }
-    
-    bool connectToServer(int max_retry = MAX_RETRY) 
-    {
-        int retry_count = 0;
         
-        while (retry_count < max_retry && !connected) {
-            // 创建套接字
-            if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-                std::cerr << "创建套接字失败" << std::endl;
+        ~TCPClient() {
+            disconnect();
+        }
+        
+        bool connectToServer() {
+            int retry_count = 0;
+            
+            while (retry_count < max_retry && !connected) {
+                // 创建套接字
+                if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+                    std::cerr << "创建套接字失败" << std::endl;
+                    return false;
+                }
+                
+                // 尝试连接
+                if (connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+                    std::cerr << "连接失败，尝试重连 (" << (retry_count + 1) << "/" << max_retry << ")..." << std::endl;
+                    close(sockfd);
+                    sockfd = -1;
+                    retry_count++;
+                    std::this_thread::sleep_for(std::chrono::seconds(RETRY_INTERVAL));
+                    continue;
+                }
+                
+                connected = true;
+                std::cout << "成功连接到服务器 " << server_ip_ << ":" << port_ << std::endl;
+                return true;
+            }
+            
+            return false;
+        }
+        
+        void disconnect() {
+            if (sockfd != -1) {
+                close(sockfd);
+                sockfd = -1;
+            }
+            connected = false;
+        }
+        
+        bool receiveFrame(cv::Mat &frame) {
+            if (!connected) {
                 return false;
             }
             
-            // 尝试连接
-            if (connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-                std::cerr << "连接失败，尝试重连 (" << (retry_count + 1) << "/" << max_retry << ")..." << std::endl;
-                close(sockfd);
-                sockfd = -1;
-                retry_count++;
-                std::this_thread::sleep_for(std::chrono::seconds(RETRY_INTERVAL));
-                continue;
-            }
-            
-            connected = true;
-            std::cout << "成功连接到服务器 " << SERVER_IP << ":" << SERVER_PORT << std::endl;
-            return true;
-        }
-        
-        return false;
-    }
-    
-    void disconnect() {
-        if (sockfd != -1) {
-            close(sockfd);
-            sockfd = -1;
-        }
-        connected = false;
-    }
-    
-    bool receiveFrame(cv::Mat &frame) {
-        if (!connected) {
-            return false;
-        }
-        
-        // 1. 接收协议头
-        ImageHeader header;
-        int received = recv(sockfd, &header, sizeof(header), MSG_WAITALL);
-        if (received <= 0) {
-            std::cerr << "接收协议头失败或连接已关闭" << std::endl;
-            connected = false;
-            return false;
-        }
-        
-        // 2. 接收图像数据
-        std::vector<uchar> buffer(header.frame_size);
-        int total_received = 0;
-        
-        while (total_received < header.frame_size) {
-            int bytes_received = recv(sockfd, buffer.data() + total_received, 
-                                     header.frame_size - total_received, 0);
-            if (bytes_received <= 0) {
-                std::cerr << "接收图像数据失败" << std::endl;
+            // 1. 接收协议头
+            ImageHeader header;
+            int received = recv(sockfd, &header, sizeof(header), MSG_WAITALL);
+            if (received <= 0) {
+                std::cerr << "接收协议头失败或连接已关闭" << std::endl;
                 connected = false;
                 return false;
             }
-            total_received += bytes_received;
+            
+            // 2. 接收图像数据
+            std::vector<uchar> buffer(header.frame_size);
+            int total_received = 0;
+            
+            while (total_received < header.frame_size) {
+                int bytes_received = recv(sockfd, buffer.data() + total_received, 
+                                        header.frame_size - total_received, 0);
+                if (bytes_received <= 0) {
+                    std::cerr << "接收图像数据失败" << std::endl;
+                    connected = false;
+                    return false;
+                }
+                total_received += bytes_received;
+            }
+            
+            // 3. 解码图像
+            frame = cv::imdecode(buffer, cv::IMREAD_COLOR);
+            if (frame.empty()) {
+                std::cerr << "图像解码失败" << std::endl;
+                return false;
+            }
+            
+            std::cout << "接收帧 #" << header.frame_number 
+                    << ", 大小: " << header.frame_size 
+                    << "字节, 时间戳: " << header.timestamp << std::endl;
+            
+            return true;
         }
         
-        // 3. 解码图像
-        frame = cv::imdecode(buffer, cv::IMREAD_COLOR);
-        if (frame.empty()) {
-            std::cerr << "图像解码失败" << std::endl;
-            return false;
+        bool isConnected() const {
+            return connected;
         }
-        
-        std::cout << "接收帧 #" << header.frame_number 
-                  << ", 大小: " << header.frame_size 
-                  << "字节, 时间戳: " << header.timestamp << std::endl;
-        
-        return true;
-    }
-    
-    bool isConnected() const {
-        return connected;
-    }
 };
+
 
 class XianDjVisualPlatformMvcs01610gcColorRosClient
 {
 public:
-    TCPClient client;
+    
     uint32_t frame_count = 0;
-    XianDjVisualPlatformMvcs01610gcColorRosClient()
+    XianDjVisualPlatformMvcs01610gcColorRosClient(std::string server_ip, int port): server_ip_(server_ip), port_(port)
     {
-        ros::NodeHandle nh;
+        // ros::NodeHandle nh;
+        
         // 创建定时器用于发布心跳信号[10](@ref)
         // timer_heart_beat_ = nh.createWallTimer(ros::WallDuration(1.0), 
         //                                       &XianDjVisualPlatformMvcs01610gcColorRosClient::m_timer_heart_beat_func, this);
@@ -181,7 +182,8 @@ public:
             frame_count++;
 
             printf("heigt: %d, width: %d channel: %d \n", frame.rows, frame.cols, frame.channels());
-            
+            std::string window_name = server_ip_ + ":" +std::to_string(port_);
+            cv::imshow(window_name, frame);
             // 按ESC退出
             if (cv::waitKey(1) == 27) {
                 ros::shutdown();
@@ -194,10 +196,14 @@ public:
     }
 
 private:
-    ros::NodeHandle private_nh_;
+    // ros::NodeHandle private_nh_;
     ros::WallTimer timer_heart_beat_;
-
+    
     int counter = 0;
+    std::string server_ip_="192.168.1.12";
+    int port_ = 4068;
+    int RETRY_INTERVAL = 3; // 断开后，3s重连一次
+    TCPClient client{server_ip_, port_};
     int xian_dj_visual_platform_mv_cs016_10gc_color_tcp_client_heart_beat = 0;
 };
 
@@ -205,7 +211,14 @@ int main(int argc, char** argv)
 {
     // 初始化ROS节点[4](@ref)
     ros::init(argc, argv, "xian_dj_visual_platform_mv_cs016_10gc_color_tcp_client");
-    XianDjVisualPlatformMvcs01610gcColorRosClient xian_dj_visual_platform_mv_cs016_10gc_color_tcp_client;
+
+    ros::NodeHandle private_nh("~");    
+    // 从参数服务器获取私有参数[10](@ref)
+    std::string server_ip_="192.168.1.12";
+    int port_ = 4068;
+    private_nh.param<std::string>("server_ip", server_ip_, "192.168.1.12");
+    private_nh.param<int>("port", port_, 4068);
+    XianDjVisualPlatformMvcs01610gcColorRosClient xian_dj_visual_platform_mv_cs016_10gc_color_tcp_client(server_ip_, port_);
     
     // // 初始连接
     // if (!client.connectToServer()) {

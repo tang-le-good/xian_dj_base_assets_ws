@@ -17,20 +17,6 @@
 #include <arpa/inet.h>
 #include <fcntl.h>  // 包含fcntl函数和相关宏的定义
 
-
-#define PORT 4069
-#define BACKLOG 128
-#define FRAME_WIDTH 1440
-#define FRAME_HEIGHT 1080
-
-// 图像传输协议头
-struct ImageHeader 
-{
-    uint32_t frame_size;    // 帧数据大小
-    uint32_t frame_number;  // 帧序号
-    uint64_t timestamp;     // 时间戳(微秒)
-};
-
 class TCPServer 
 {
     private:
@@ -40,10 +26,23 @@ class TCPServer
         struct sockaddr_in client_addr;
         bool is_running;
         int num_frames = 1;
+        int port_;
+        int BACKLOG_;
+        int frame_width_;
+        int frame_height_;
+    
+        public:
+        // 图像传输协议头
+        struct ImageHeader 
+        {
+            uint32_t frame_size;    // 帧数据大小
+            uint32_t frame_number;  // 帧序号
+            uint64_t timestamp;     // 时间戳(微秒)
+        };
         
         
     public:
-        TCPServer() : server_fd(-1), client_fd(-1), is_running(false) 
+        TCPServer(int port, int BACKLOG, int frame_width, int frame_height) : port_(port), BACKLOG_(BACKLOG), frame_width_(frame_width), frame_height_(frame_height), server_fd(-1), client_fd(-1), is_running(false) 
         {
             memset(&server_addr, 0, sizeof(server_addr));
             memset(&client_addr, 0, sizeof(client_addr));
@@ -75,7 +74,7 @@ class TCPServer
             // 3. 配置服务器地址
             server_addr.sin_family = AF_INET;
             server_addr.sin_addr.s_addr = INADDR_ANY;
-            server_addr.sin_port = htons(PORT);
+            server_addr.sin_port = htons(port_);
             
             
             
@@ -97,14 +96,14 @@ class TCPServer
             }
             
             // 开始监听
-            if (listen(server_fd, BACKLOG) < 0) 
+            if (listen(server_fd, BACKLOG_) < 0) 
             {
                 std::cerr << "监听失败: " << strerror(errno) << std::endl;
                 return false;
             }
             
             is_running = true;
-            std::cout << "服务器启动成功，监听端口 " << PORT << "..." << std::endl;
+            std::cout << "服务器启动成功，监听端口 " << port_ << "..." << std::endl;
             
             return true;
         }
@@ -202,7 +201,7 @@ class TCPServer
             
             // 缩放图像到指定分辨率
             // cv::Mat resized_frame;
-            // cv::resize(frame, resized_frame, cv::Size(FRAME_WIDTH, FRAME_HEIGHT));
+            // cv::resize(frame, resized_frame, cv::Size(frame_width_, frame_height_));
             
             // 编码为JPEG格式
             std::vector<uchar> buffer;
@@ -290,14 +289,11 @@ class TCPServer
 class XianDjVisualPlatformMvcs01610gcColorRosServer
 {
 public:
-    XianDjVisualPlatformMvcs01610gcColorRosServer() : g_bExit(false)
+    XianDjVisualPlatformMvcs01610gcColorRosServer(int camera_index, int port) : camera_index_(camera_index), port_(port), g_bExit(false)
     {
         // 初始化节点句柄
         ros::NodeHandle nh;
-        ros::NodeHandle private_nh("~");
         
-        // 从参数服务器获取私有参数[10](@ref)
-        private_nh.param<int>("camera_index", camera_index_, 0);
         
         ROS_INFO("XianDjVisualPlatformMvcs01610gcColorRosServer initialized with camera_index: %d", 
                  camera_index_);
@@ -391,8 +387,7 @@ public:
     }
 
 private:
-    // 申明图像发送TCP server
-    TCPServer server;
+    
     int counter = 0;
     int xian_dj_visual_platform_mv_cs016_10gc_color_tcp_server_heart_beat = 0;
 
@@ -577,7 +572,7 @@ private:
     }
 
 private:
-    ros::NodeHandle private_nh_;
+    // ros::NodeHandle private_nh_;
     ros::WallTimer timer_heart_beat_;
     ros::WallTimer timer_capture_;
     
@@ -586,7 +581,12 @@ private:
     
     // 参数[10](@ref)
     int camera_index_ = 0;
-
+    int port_ = 4068;
+    int BACKLOG_ = 128;
+    int frame_width_ = 1080;
+    int frame_height_ = 720;
+    // 申明图像发送TCP server
+    TCPServer server{port_, BACKLOG_, frame_width_, frame_height_};
     int heart_beat_counter_ = 0;
 };
 
@@ -594,10 +594,16 @@ int main(int argc, char** argv)
 {
     // 初始化ROS节点[4](@ref)
     ros::init(argc, argv, "xian_dj_visual_platform_mv_cs016_10gc_color_tcp_server");
-    
+    ros::NodeHandle private_nh("~");
+    // 从参数服务器获取私有参数[10](@ref)
+    int port_ = 4068;
+    int camera_index_ = 0;
+    private_nh.param<int>("camera_index", camera_index_, 0);
+    private_nh.param<int>("port", port_, 0);
+
     try 
     {
-        XianDjVisualPlatformMvcs01610gcColorRosServer camera_node;
+        XianDjVisualPlatformMvcs01610gcColorRosServer camera_node{camera_index_, port_};
         camera_node.run();
     }
     catch (const std::exception& e) 

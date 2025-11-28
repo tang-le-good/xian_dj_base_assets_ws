@@ -6,10 +6,20 @@ from typing import Dict
 import time
 from std_msgs.msg import Float32MultiArray
 import socket
+from xian_dj_stewart_platform_control_pkg.msg import xian_dj_stewart_platform_base_electric
+from std_msgs.msg import UInt16
+
      
 class XianDjStewartPlatformBaseElectric:
     def __init__(self):
         rospy.init_node('xian_dj_stewart_platform_base_electric', anonymous=True)
+
+        # 订阅话题
+        rospy.Subscriber("xian_dj_stewart_platform_base_electric_msg", xian_dj_stewart_platform_base_electric, self.callback)
+        # 发布话题
+        self.pub_msg = rospy.Publisher("xian_dj_stewart_platform_base_electric_state_msg", UInt16, queue_size=1)
+        self.heart_beat_msg = UInt16()
+
         
         #TCP参数
         self.tcp_ip   = '192.168.1.11'   # NE2-T1 静态 IP
@@ -31,23 +41,16 @@ class XianDjStewartPlatformBaseElectric:
         self.xian_dj_stewart_platform_arm5_cmd = 0
         self.xian_dj_stewart_platform_arm6_cmd = 0
 
+    def callback(self, data):
+        self.xian_dj_stewart_platform_arm1_cmd = data.xian_dj_stewart_platform_arm1_cmd
+        self.xian_dj_stewart_platform_arm2_cmd = data.xian_dj_stewart_platform_arm2_cmd
+        self.xian_dj_stewart_platform_arm3_cmd = data.xian_dj_stewart_platform_arm3_cmd
+        self.xian_dj_stewart_platform_arm4_cmd = data.xian_dj_stewart_platform_arm4_cmd
+        self.xian_dj_stewart_platform_arm5_cmd = data.xian_dj_stewart_platform_arm5_cmd
+        self.xian_dj_stewart_platform_arm6_cmd = data.xian_dj_stewart_platform_arm6_cmd
 
-    def xian_heat_beat_callback(self, event):
-        rospy.set_param("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_base_electric_heart_beat", self.counter)
-        xian_dj_stewart_platform_base_electric_heart_beat = rospy.get_param("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_base_electric_heart_beat")
-        if self.counter>1000:
-            self.counter = 0
-        self.counter += 1
-        print("xian_dj_stewart_platform_base_electric_heart_beat:", xian_dj_stewart_platform_base_electric_heart_beat)
     
     def xian_dj_stewart_platform_move_callback_fun(self, event):
-        self.xian_dj_stewart_platform_arm1_cmd = rospy.get_param("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm1_cmd")
-        self.xian_dj_stewart_platform_arm2_cmd = rospy.get_param("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm2_cmd")
-        self.xian_dj_stewart_platform_arm3_cmd = rospy.get_param("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm3_cmd")
-        self.xian_dj_stewart_platform_arm4_cmd = rospy.get_param("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm4_cmd")
-        self.xian_dj_stewart_platform_arm5_cmd = rospy.get_param("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm5_cmd")
-        self.xian_dj_stewart_platform_arm6_cmd = rospy.get_param("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm6_cmd")
-            
         try:
             # 设置响应时间
             param_time_high, param_time_low = self.int_to_hex_bytes(100)
@@ -82,6 +85,14 @@ class XianDjStewartPlatformBaseElectric:
                 self.sock.sendall(tx_data)
                 print("angle 1: % 0.3f, angle 2: % 0.3f, angle 3: % 0.3f, angle 4: % 0.3f, angle 5: % 0.3f, angle 6: % 0.3f" % 
                               (self.xian_dj_stewart_platform_arm1_cmd,self.xian_dj_stewart_platform_arm2_cmd,self.xian_dj_stewart_platform_arm3_cmd,self.xian_dj_stewart_platform_arm4_cmd,self.xian_dj_stewart_platform_arm5_cmd,self.xian_dj_stewart_platform_arm6_cmd))
+                
+                # 心跳
+                if self.counter > 1000:
+                    self.counter = 0
+                self.counter += 1
+                self.heart_beat_msg.data = self.counter
+                self.pub_msg.publish(self.heart_beat_msg)
+
             else:
                 rospy.logerr("Serial port not available")
                 
@@ -105,13 +116,13 @@ class XianDjStewartPlatformBaseElectric:
                     voltage_mv = (voltage_data["param_vol_high"] << 8) + voltage_data["param_vol_low"]
                     print(f"[RX] Decoded: {voltage_data}")
                     print(f"Battery Voltage: {voltage_mv / 1000:.2f}V")
-                    rospy.set_param("/xian_dj_stewart_platform_params_server/xian_is_duoji_driver_power", 1)
+                    # rospy.set_param("/xian_dj_stewart_platform_params_server/xian_is_duoji_driver_power", 1)
                     break
                 else:
                     print(f"[RX] Invalid data: {rx_data.hex(' ').upper()}")
             # time.sleep(0.01)
             else:
-                rospy.set_param("/xian_dj_stewart_platform_params_server/xian_is_duoji_driver_power", 0)
+                # rospy.set_param("/xian_dj_stewart_platform_params_server/xian_is_duoji_driver_power", 0)
                 print("Timeout: No valid response received")
             pass
 
@@ -211,8 +222,7 @@ if __name__ == '__main__':
     try:
         tt = XianDjStewartPlatformBaseElectric()
         rospy.init_node('xian_dj_stewart_platform_base_electric', anonymous=True)  # 初始化ROS节点
-        rospy.Timer(rospy.Duration(1), tt.xian_heat_beat_callback, oneshot=False) # 心跳线程
-        rospy.Timer(rospy.Duration(0.3), tt.xian_dj_stewart_platform_move_callback_fun, oneshot=False) # 控制舵臂转动线程
+        rospy.Timer(rospy.Duration(0.1), tt.xian_dj_stewart_platform_move_callback_fun, oneshot=False) # 控制舵臂转动线程
         rospy.spin()  # 添加这行确保节点持续运行
 
     except rospy.ROSInterruptException:

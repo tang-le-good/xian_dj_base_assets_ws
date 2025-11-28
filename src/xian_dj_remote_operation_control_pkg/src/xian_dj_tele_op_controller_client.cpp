@@ -2,7 +2,7 @@
 #include<stdio.h>
 #include<sys/types.h>
 #include <sensor_msgs/Joy.h>
-
+#include <std_msgs/UInt16.h>
 #include <iostream>
 #include <string>
 #include <cstring>
@@ -12,10 +12,10 @@
 #include <thread>
 #include <chrono>
 
-#define SERVER_IP "192.168.1.12"
-#define SERVER_PORT 3241
-#define MAX_RETRY 900000000 
-#define RETRY_INTERVAL 3 // 重试间隔(秒)     3秒重连1次，900000000次，时间大概是10年
+// #define SERVER_IP "192.168.1.12"
+// #define SERVER_PORT 3241
+// #define MAX_RETRY 900000000 
+// #define RETRY_INTERVAL 3 // 重试间隔(秒)     3秒重连1次，900000000次，时间大概是10年
 
 // client发送的数据
 struct client2server 
@@ -67,17 +67,21 @@ class TCPClient
         int sockfd;
         struct sockaddr_in server_addr;
         bool connected;
+        std::string server_ip_;
+        int server_port_;
+        int max_retry=900000000;
+        int RETRY_INTERVAL=3; // 3s重连一次
         
     public:
-        TCPClient() : sockfd(-1), connected(false) 
+        TCPClient(const std::string& ip, int port):server_ip_(ip), server_port_(port), sockfd(-1), connected(false) 
         {
             memset(&server_addr, 0, sizeof(server_addr));
             server_addr.sin_family = AF_INET;
-            server_addr.sin_port = htons(SERVER_PORT);
+            server_addr.sin_port = htons(server_port_);
             
-            if (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr) <= 0) 
+            if (inet_pton(AF_INET, server_ip_.c_str(), &server_addr.sin_addr) <= 0) 
             {
-                std::cerr << "无效的地址或地址不支持" << std::endl;
+                std::cerr << "无效的地址或地址不支持: " << server_ip_ << std::endl;
             }
         }
         
@@ -86,7 +90,7 @@ class TCPClient
             disconnect();
         }
         
-        bool connectToServer(int max_retry = MAX_RETRY) 
+        bool connectToServer() 
         {
             int retry_count = 0;
             
@@ -111,7 +115,7 @@ class TCPClient
                 }
                 
                 connected = true;
-                std::cout << "成功连接到服务器 " << SERVER_IP << ":" << SERVER_PORT << std::endl;
+                std::cout << "成功连接到服务器 " << server_ip_ << ":" << server_port_ << std::endl;
                 return true;
             }
             
@@ -148,7 +152,30 @@ class TCPClient
         
         bool receiveData(server2client& server_data) 
         {
+            // 设置文件描述符集合
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(sockfd, &readfds);
             
+            // 设置3秒超时
+            struct timeval timeout;
+            timeout.tv_sec = 3;
+            timeout.tv_usec = 0;
+            
+            // 等待socket可读
+            int select_result = select(sockfd + 1, &readfds, NULL, NULL, &timeout);
+            
+            if (select_result == 0) {
+                std::cerr << "接收数据超时（3秒）" << std::endl;
+                // connected = false;
+                return false;
+            } else if (select_result < 0) {
+                std::cerr << "select错误: " << strerror(errno) << std::endl;
+                // connected = false;
+                return false;
+            }
+
+            // 有数据可读，正常接收
             int recv_len = recv(sockfd, &server_data, sizeof(server_data), 0);
             
             if (recv_len <= 0) 
@@ -158,7 +185,6 @@ class TCPClient
                 return false;
             }
             
-            // response.assign(server_data, recv_len);
             return true;
         }
         
@@ -176,31 +202,15 @@ class XianDjTeleOpControllerClient
             // 创建一个ROS节点句柄
             ros::NodeHandle nh;
             init();
+            xian_dj_tele_op_controller_client_pub = nh.advertise<std_msgs::UInt16>("xian_dj_tele_op_controller_client_msg", 1);
             controller_sub = nh.subscribe<sensor_msgs::Joy>("joy", 10, &XianDjTeleOpControllerClient::controller_callback, this);
         }
 
-        ros::WallTimer m_timer_heart_beat;
         ros::WallTimer m_timer_control;
-
-        void m_timer_heart_beat_func(const ros::WallTimerEvent& event)
-        {
-            ros::param::get("/xian_dj_tele_op_params_server/xian_dj_tele_op_controller_client_heart_beat", xian_dj_tele_op_controller_client_heart_beat); 
-            std::cout << "xian_dj_tele_op_controller_client_heart_beat: " << xian_dj_tele_op_controller_client_heart_beat << std::endl;
-            counter = counter > 1000 ? 0 : (counter + 1);
-            ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_controller_client_heart_beat", counter);  // 自行替换
-        }
 
         void m_timer_control_func(const ros::WallTimerEvent& event)
         {
-            ros::param::get("/xian_dj_tele_op_params_server/xian_dj_tele_op_controller_server_tcp_error", xian_dj_tele_op_controller_server_tcp_error); 
-            if(xian_dj_tele_op_controller_server_tcp_error != 0)
-            {
-                // 什么也不用做，等待
-            }
-            else
-            {
-                this->command_callback();
-            }
+            this->command_callback();
         }
 
         void controller_callback(const sensor_msgs::Joy::ConstPtr &Joy)
@@ -255,30 +265,31 @@ class XianDjTeleOpControllerClient
             xian_dj_tele_op_l1_client_cmd = Joy->buttons[6];
             xian_dj_tele_op_l2_client_cmd = Joy->buttons[8];
            
-            printf("xian_dj_tele_op_x_client_cmd: %d\n", xian_dj_tele_op_x_client_cmd);
-            printf("xian_dj_tele_op_b_client_cmd: %d\n", xian_dj_tele_op_b_client_cmd);
-            printf("xian_dj_tele_op_y_client_cmd: %d\n", xian_dj_tele_op_y_client_cmd);
-            printf("xian_dj_tele_op_a_client_cmd: %d\n", xian_dj_tele_op_a_client_cmd);
-            printf("xian_dj_tele_op_left_rocker_x_client_cmd: %.2f\n", xian_dj_tele_op_left_rocker_x_client_cmd);
-            printf("xian_dj_tele_op_left_rocker_y_client_cmd: %.2f\n", xian_dj_tele_op_left_rocker_y_client_cmd);
-            printf("xian_dj_tele_op_right_rocker_x_client_cmd: %.2f\n", xian_dj_tele_op_right_rocker_x_client_cmd);
-            printf("xian_dj_tele_op_right_rocker_y_client_cmd: %.2f\n", xian_dj_tele_op_right_rocker_y_client_cmd);
-            printf("xian_dj_tele_op_r1_client_cmd: %d\n", xian_dj_tele_op_r1_client_cmd);
-            printf("xian_dj_tele_op_r2_client_cmd: %d\n", xian_dj_tele_op_r2_client_cmd);
-            printf("xian_dj_tele_op_l1_client_cmd: %d\n", xian_dj_tele_op_l1_client_cmd);
-            printf("xian_dj_tele_op_l2_client_cmd: %d\n", xian_dj_tele_op_l2_client_cmd);
-            printf("xian_dj_tele_op_left_client_cmd: %d\n", xian_dj_tele_op_left_client_cmd);
-            printf("xian_dj_tele_op_right_client_cmd: %d\n", xian_dj_tele_op_right_client_cmd);
-            printf("xian_dj_tele_op_up_client_cmd: %d\n", xian_dj_tele_op_up_client_cmd);
-            printf("xian_dj_tele_op_down_client_cmd: %d\n", xian_dj_tele_op_down_client_cmd);
+            // printf("xian_dj_tele_op_x_client_cmd: %d\n", xian_dj_tele_op_x_client_cmd);
+            // printf("xian_dj_tele_op_b_client_cmd: %d\n", xian_dj_tele_op_b_client_cmd);
+            // printf("xian_dj_tele_op_y_client_cmd: %d\n", xian_dj_tele_op_y_client_cmd);
+            // printf("xian_dj_tele_op_a_client_cmd: %d\n", xian_dj_tele_op_a_client_cmd);
+            // printf("xian_dj_tele_op_left_rocker_x_client_cmd: %.2f\n", xian_dj_tele_op_left_rocker_x_client_cmd);
+            // printf("xian_dj_tele_op_left_rocker_y_client_cmd: %.2f\n", xian_dj_tele_op_left_rocker_y_client_cmd);
+            // printf("xian_dj_tele_op_right_rocker_x_client_cmd: %.2f\n", xian_dj_tele_op_right_rocker_x_client_cmd);
+            // printf("xian_dj_tele_op_right_rocker_y_client_cmd: %.2f\n", xian_dj_tele_op_right_rocker_y_client_cmd);
+            // printf("xian_dj_tele_op_r1_client_cmd: %d\n", xian_dj_tele_op_r1_client_cmd);
+            // printf("xian_dj_tele_op_r2_client_cmd: %d\n", xian_dj_tele_op_r2_client_cmd);
+            // printf("xian_dj_tele_op_l1_client_cmd: %d\n", xian_dj_tele_op_l1_client_cmd);
+            // printf("xian_dj_tele_op_l2_client_cmd: %d\n", xian_dj_tele_op_l2_client_cmd);
+            // printf("xian_dj_tele_op_left_client_cmd: %d\n", xian_dj_tele_op_left_client_cmd);
+            // printf("xian_dj_tele_op_right_client_cmd: %d\n", xian_dj_tele_op_right_client_cmd);
+            // printf("xian_dj_tele_op_up_client_cmd: %d\n", xian_dj_tele_op_up_client_cmd);
+            // printf("xian_dj_tele_op_down_client_cmd: %d\n", xian_dj_tele_op_down_client_cmd);
         }
 
     private:
-        ros::Subscriber controller_sub;
-        int counter = 0;
+        ros::Subscriber controller_sub; // 订阅遥控器/joy消息
+        ros::Publisher xian_dj_tele_op_controller_client_pub; // 发布client的心跳topic
+        std_msgs::UInt16 pub_msg; // client的心跳topic的type
         int xian_dj_tele_op_controller_client_heart_beat = 0;
         int xian_dj_tele_op_controller_server_tcp_heart_beat = 0;
-        int xian_dj_tele_op_controller_server_tcp_error = 0;
+        // int xian_dj_tele_op_controller_server_tcp_error = 0;
       
         // 声明遥控器接收到的变量
         int xian_dj_tele_op_left_client_cmd = 0;
@@ -301,7 +312,10 @@ class XianDjTeleOpControllerClient
         int axes_6_common = 0;
         int axes_7_common = 0;
 
-        TCPClient client;
+        std::string server_ip_ = "192.168.1.12";
+        int server_port_ = 3241;
+        int RETRY_INTERVAL = 3; // 断开后，3s重连一次
+        TCPClient client{server_ip_, server_port_};
         struct client2server client_data;
         struct server2client server_data;
 
@@ -327,7 +341,10 @@ class XianDjTeleOpControllerClient
                     return -1;
                 }
             }
-                
+
+            // client心跳
+            xian_dj_tele_op_controller_client_heart_beat = xian_dj_tele_op_controller_client_heart_beat > 1000 ? 0 : (xian_dj_tele_op_controller_client_heart_beat + 1);
+            printf("xian_dj_tele_op_controller_client_heart_beat: %d \n", xian_dj_tele_op_controller_client_heart_beat);    
             // 发送数据
             client_data.xian_dj_tele_op_controller_client_tcp_heart_beat = xian_dj_tele_op_controller_client_heart_beat;
             client_data.xian_dj_tele_op_left_client_cmd = xian_dj_tele_op_left_client_cmd;
@@ -372,13 +389,20 @@ class XianDjTeleOpControllerClient
                 return -1;
             }
             
-            // 接收响应
+            // 接收响应（带3秒超时）
             if (client.receiveData(server_data)) 
             {
                 xian_dj_tele_op_controller_server_tcp_heart_beat = server_data.xian_dj_tele_op_controller_server_tcp_heart_beat;
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_controller_server_tcp_heart_beat", xian_dj_tele_op_controller_server_tcp_heart_beat); 
+                // ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_controller_server_tcp_heart_beat", xian_dj_tele_op_controller_server_tcp_heart_beat); 
                 printf("返回的结果：server_heart_beat=%d, \n", xian_dj_tele_op_controller_server_tcp_heart_beat);
             }
+            else
+            {
+                xian_dj_tele_op_controller_server_tcp_heart_beat = 0;
+                printf("recieve server data failed \n");
+            }
+            pub_msg.data = xian_dj_tele_op_controller_server_tcp_heart_beat;
+            xian_dj_tele_op_controller_client_pub.publish(pub_msg);
             return 1;
         }
 
@@ -396,7 +420,6 @@ int main(int argc, char** argv)
     ros::AsyncSpinner spinner(0);
     spinner.start();
 
-    xian_dj_tele_op_controller_client.m_timer_heart_beat = nh_2.createWallTimer(ros::WallDuration(1.0), &XianDjTeleOpControllerClient::m_timer_heart_beat_func, &xian_dj_tele_op_controller_client);
     xian_dj_tele_op_controller_client.m_timer_control = nh_2.createWallTimer(ros::WallDuration(0.1), &XianDjTeleOpControllerClient::m_timer_control_func, &xian_dj_tele_op_controller_client);
     ros::waitForShutdown();
     

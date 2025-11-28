@@ -1,0 +1,7 @@
+std_msgs/Header header
+float32 xian_dj_stewart_platform_arm1_cmd 
+float32 xian_dj_stewart_platform_arm2_cmd 
+float32 xian_dj_stewart_platform_arm3_cmd 
+float32 xian_dj_stewart_platform_arm4_cmd 
+float32 xian_dj_stewart_platform_arm5_cmd 
+float32 xian_dj_stewart_platform_arm6_cmd 

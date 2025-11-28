@@ -1,0 +1,7 @@
+std_msgs/Header header
+float32 xian_dj_stewart_platform_input_alpha_cmd 
+float32 xian_dj_stewart_platform_input_beta_cmd 
+float32 xian_dj_stewart_platform_input_gamma_cmd 
+float32 xian_dj_stewart_platform_input_x_cmd 
+float32 xian_dj_stewart_platform_input_y_cmd 
+float32 xian_dj_stewart_platform_input_z_cmd 

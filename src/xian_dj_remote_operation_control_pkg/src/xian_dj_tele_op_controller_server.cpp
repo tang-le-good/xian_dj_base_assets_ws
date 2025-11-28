@@ -12,8 +12,7 @@
 #include <errno.h>
 #include <poll.h>    // 新增：用于poll相关功能
 #include <fcntl.h>   // 新增：用于文件控制操作
-// #define PORT 3241
-// #define BACKLOG 2048
+#include "xian_dj_remote_operation_control_pkg/xian_dj_tele_op_controller_server.h"
 
 // 接收client的数据
 struct client2server 
@@ -41,22 +40,6 @@ struct client2server
 struct server2client
 {
     int xian_dj_tele_op_controller_server_tcp_heart_beat; 
-    // int xian_dj_tele_op_left_server_cmd;
-    // int xian_dj_tele_op_right_server_cmd;
-    // int xian_dj_tele_op_up_server_cmd;
-    // int xian_dj_tele_op_down_server_cmd;
-    // int xian_dj_tele_op_x_server_cmd;
-    // int xian_dj_tele_op_b_server_cmd;
-    // int xian_dj_tele_op_y_server_cmd;
-    // int xian_dj_tele_op_a_server_cmd;
-    // double xian_dj_tele_op_left_rocker_x_server_cmd;
-    // double xian_dj_tele_op_left_rocker_y_server_cmd;
-    // double xian_dj_tele_op_right_rocker_x_server_cmd;
-    // double xian_dj_tele_op_right_rocker_y_server_cmd;
-    // int xian_dj_tele_op_r1_server_cmd;
-    // int xian_dj_tele_op_r2_server_cmd;
-    // int xian_dj_tele_op_l1_server_cmd;
-    // int xian_dj_tele_op_l2_server_cmd;
 };
 
 class TCPServer 
@@ -398,8 +381,8 @@ class XianDjTeleOpControllerServer
         XianDjTeleOpControllerServer()
         {
             // 创建一个ROS节点句柄
-            // ros::NodeHandle nh;
-
+            ros::NodeHandle nh;
+            xian_dj_tele_op_controller_server_pub = nh.advertise<xian_dj_remote_operation_control_pkg::xian_dj_tele_op_controller_server>("xian_dj_tele_op_controller_server_msg", 1);
             // 启动服务器
             if (!server.start()) 
             {
@@ -407,36 +390,14 @@ class XianDjTeleOpControllerServer
             }
         }
 
-        // ros::WallTimer m_timer_heart_beat;
         ros::WallTimer m_timer_control;
-
-        // void m_timer_heart_beat_func(const ros::WallTimerEvent& event)
-        // {
-        //     ros::param::get("/xian_dj_tele_op_params_server/xian_dj_tele_op_controller_server_heart_beat", xian_dj_tele_op_controller_server_heart_beat); 
-        //     std::cout << "xian_dj_tele_op_controller_server_heart_beat: " << xian_dj_tele_op_controller_server_heart_beat << std::endl;
-        //     counter = counter > 1000 ? 0 : (counter + 1);
-        //     ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_controller_server_heart_beat", counter);  // 自行替换
-        // }
 
         void m_timer_control_func(const ros::WallTimerEvent& event)
         {
-            ros::param::get("/xian_dj_tele_op_params_server/xian_dj_tele_op_controller_server_heart_beat", xian_dj_tele_op_controller_server_heart_beat); 
-            std::cout << "xian_dj_tele_op_controller_server_heart_beat: " << xian_dj_tele_op_controller_server_heart_beat << std::endl;
-            counter = counter > 1000 ? 0 : (counter + 1);
-            ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_controller_server_heart_beat", counter);  // 自行替换
-
-            ros::param::get("/xian_dj_tele_op_params_server/xian_dj_tele_op_controller_client_tcp_error", xian_dj_tele_op_controller_client_tcp_error); 
-            if(xian_dj_tele_op_controller_client_tcp_error != 0)
-            {
-                // 什么也不用做，等待
-            }
-            else
-            {
-                this->command_callback();
-            }
-            
+            this->command_callback();
         }
 
+        // 打印系统当前时间
         void someMethod() 
         {
             auto now = std::chrono::system_clock::now();
@@ -449,10 +410,11 @@ class XianDjTeleOpControllerServer
         }
 
     private:
-        int counter = 0;
+        ros::Publisher xian_dj_tele_op_controller_server_pub; // 发布client的心跳topic
+        xian_dj_remote_operation_control_pkg::xian_dj_tele_op_controller_server pub_msg; // client的心跳topic的type
         int xian_dj_tele_op_controller_server_heart_beat = 0;
         int xian_dj_tele_op_controller_client_tcp_heart_beat = 0;
-        int xian_dj_tele_op_controller_client_tcp_error = 0;
+
 
          // 声明鲁班猫接收到的变量
         int xian_dj_tele_op_left_server_cmd;
@@ -479,198 +441,137 @@ class XianDjTeleOpControllerServer
         
         int command_callback()
         {
-            // // 接受客户端连接
-            // if (!server.acceptClient()) 
-            // {
-            //     return -1;
-            // }
-
+            // 心跳
+            xian_dj_tele_op_controller_server_heart_beat = xian_dj_tele_op_controller_server_heart_beat > 1000 ? 0 : (xian_dj_tele_op_controller_server_heart_beat + 1);
+            printf("xian_dj_tele_op_controller_server_heart_beat: %d \n", xian_dj_tele_op_controller_server_heart_beat);    
+            
             // 设置select超时
-        struct timeval timeout;
-        timeout.tv_sec = 1;
-        timeout.tv_usec = 0;
-        
-        // 等待事件发生
-        int ready = server.waitForEvents(&timeout);
-        
-        if (ready < 0) 
-        {
-            // 严重错误，退出循环
-            return -1;
-        }
-        
-        if (ready == 0) 
-        {
-            // 超时，没有事件发生，可以执行一些后台任务
-            return -1;
-        }
-        
-        // 处理所有已连接的客户端
-        std::vector<int> client_fds = server.getClientFDs();
-        for (int client_fd : client_fds) 
-        {
-            // 接收数据（非阻塞）
-            int recv_len = server.receiveData(client_fd, client_data);
-            if (recv_len > 0) 
+            struct timeval timeout;
+            timeout.tv_sec = 1;
+            timeout.tv_usec = 0;
+            
+            // 等待事件发生
+            int ready = server.waitForEvents(&timeout);
+            
+            if (ready < 0) 
             {
-                // printf("收到数据：xian_dj_tele_op_controller_client_tcp_heart_beat= %d \n", client_data.xian_dj_tele_op_controller_client_tcp_heart_beat);
-                // printf("收到数据：xian_dj_tele_op_left_client_cmd = %d \n", client_data.xian_dj_tele_op_left_client_cmd);
-                // printf("收到数据：xian_dj_tele_op_right_client_cmd = %d \n", client_data.xian_dj_tele_op_right_client_cmd);
-                // printf("收到数据：xian_dj_tele_op_up_client_cmd = %d \n", client_data.xian_dj_tele_op_up_client_cmd);
-                // printf("收到数据：xian_dj_tele_op_down_client_cmd= %d \n", client_data.xian_dj_tele_op_down_client_cmd);
-                // printf("收到数据：xian_dj_tele_op_x_client_cmd= %d \n", client_data.xian_dj_tele_op_x_client_cmd);
-                // printf("收到数据：xian_dj_tele_op_b_client_cmd= %d \n", client_data.xian_dj_tele_op_b_client_cmd);
-                // printf("收到数据：xian_dj_tele_op_y_client_cmd= %d \n", client_data.xian_dj_tele_op_y_client_cmd);
-                // printf("收到数据：xian_dj_tele_op_a_client_cmd= %d \n", client_data.xian_dj_tele_op_a_client_cmd);
-                printf("收到数据：xian_dj_tele_op_left_rocker_x_client_cmd= %f \n", client_data.xian_dj_tele_op_left_rocker_x_client_cmd);
-                // printf("收到数据：xian_dj_tele_op_left_rocker_y_client_cmd= %f \n", client_data.xian_dj_tele_op_left_rocker_y_client_cmd);
-                // printf("收到数据：xian_dj_tele_op_right_rocker_x_client_cmd= %f \n", client_data.xian_dj_tele_op_right_rocker_x_client_cmd);
-                // printf("收到数据：xian_dj_tele_op_right_rocker_y_client_cmd= %f \n", client_data.xian_dj_tele_op_right_rocker_y_client_cmd);
-                // printf("收到数据：xian_dj_tele_op_r1_client_cmd= %d \n", client_data.xian_dj_tele_op_r1_client_cmd);
-                // printf("收到数据：xian_dj_tele_op_r2_client_cmd= %d \n", client_data.xian_dj_tele_op_r2_client_cmd);
-                // printf("收到数据：xian_dj_tele_op_l1_client_cmd= %d \n", client_data.xian_dj_tele_op_l1_client_cmd);
-                // printf("收到数据：xian_dj_tele_op_l2_client_cmd= %d \n", client_data.xian_dj_tele_op_l2_client_cmd);
-                someMethod();
-
-                xian_dj_tele_op_controller_client_tcp_heart_beat = client_data.xian_dj_tele_op_controller_client_tcp_heart_beat;
-                xian_dj_tele_op_left_server_cmd = client_data.xian_dj_tele_op_left_client_cmd;
-                xian_dj_tele_op_right_server_cmd = client_data.xian_dj_tele_op_right_client_cmd;
-                xian_dj_tele_op_up_server_cmd = client_data.xian_dj_tele_op_up_client_cmd;
-                xian_dj_tele_op_down_server_cmd = client_data.xian_dj_tele_op_down_client_cmd;
-                xian_dj_tele_op_x_server_cmd = client_data.xian_dj_tele_op_x_client_cmd;
-                xian_dj_tele_op_b_server_cmd = client_data.xian_dj_tele_op_b_client_cmd;
-                xian_dj_tele_op_y_server_cmd = client_data.xian_dj_tele_op_y_client_cmd;
-                xian_dj_tele_op_a_server_cmd = client_data.xian_dj_tele_op_a_client_cmd;
-                xian_dj_tele_op_left_rocker_x_server_cmd = client_data.xian_dj_tele_op_left_rocker_x_client_cmd;
-                xian_dj_tele_op_left_rocker_y_server_cmd = client_data.xian_dj_tele_op_left_rocker_y_client_cmd;
-                xian_dj_tele_op_right_rocker_x_server_cmd = client_data.xian_dj_tele_op_right_rocker_x_client_cmd;
-                xian_dj_tele_op_right_rocker_y_server_cmd = client_data.xian_dj_tele_op_right_rocker_y_client_cmd;
-                xian_dj_tele_op_r1_server_cmd = client_data.xian_dj_tele_op_r1_client_cmd;
-                xian_dj_tele_op_r2_server_cmd = client_data.xian_dj_tele_op_r2_client_cmd;
-                xian_dj_tele_op_l1_server_cmd = client_data.xian_dj_tele_op_l1_client_cmd;
-                xian_dj_tele_op_l2_server_cmd = client_data.xian_dj_tele_op_l2_client_cmd;
-                // set param server
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_left_server_cmd", xian_dj_tele_op_left_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_right_server_cmd", xian_dj_tele_op_right_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_up_server_cmd", xian_dj_tele_op_up_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_down_server_cmd", xian_dj_tele_op_down_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_x_server_cmd", xian_dj_tele_op_x_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_b_server_cmd", xian_dj_tele_op_b_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_y_server_cmd", xian_dj_tele_op_y_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_a_server_cmd", xian_dj_tele_op_a_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_left_rocker_x_server_cmd", xian_dj_tele_op_left_rocker_x_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_left_rocker_y_server_cmd", xian_dj_tele_op_left_rocker_y_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_right_rocker_x_server_cmd", xian_dj_tele_op_right_rocker_x_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_right_rocker_y_server_cmd", xian_dj_tele_op_right_rocker_y_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_r1_server_cmd", xian_dj_tele_op_r1_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_r2_server_cmd", xian_dj_tele_op_r2_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_l1_server_cmd", xian_dj_tele_op_l1_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_l2_server_cmd", xian_dj_tele_op_l2_server_cmd); 
-                ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_controller_client_tcp_heart_beat", xian_dj_tele_op_controller_client_tcp_heart_beat); 
-                
-
-                // 发送响应
-                server_data.xian_dj_tele_op_controller_server_tcp_heart_beat = xian_dj_tele_op_controller_server_heart_beat;
-                if (!server.sendData(client_fd, server_data)) 
+                // 严重错误，退出循环
+                return -1;
+            }
+            
+            if (ready == 0) 
+            {
+                // 超时，没有事件发生，可以执行一些后台任务
+                return -1;
+            }
+            
+            // 处理所有已连接的客户端
+            std::vector<int> client_fds = server.getClientFDs();
+            for (int client_fd : client_fds) 
+            {
+                // 接收数据（非阻塞）
+                int recv_len = server.receiveData(client_fd, client_data);
+                if (recv_len > 0) 
                 {
-                    std::cout << "向客户端 " << client_fd << " 发送失败，关闭连接" << std::endl;
-                    server.closeClient(client_fd);
+                    // printf("收到数据：xian_dj_tele_op_controller_client_tcp_heart_beat= %d \n", client_data.xian_dj_tele_op_controller_client_tcp_heart_beat);
+                    // printf("收到数据：xian_dj_tele_op_left_client_cmd = %d \n", client_data.xian_dj_tele_op_left_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_right_client_cmd = %d \n", client_data.xian_dj_tele_op_right_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_up_client_cmd = %d \n", client_data.xian_dj_tele_op_up_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_down_client_cmd= %d \n", client_data.xian_dj_tele_op_down_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_x_client_cmd= %d \n", client_data.xian_dj_tele_op_x_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_b_client_cmd= %d \n", client_data.xian_dj_tele_op_b_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_y_client_cmd= %d \n", client_data.xian_dj_tele_op_y_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_a_client_cmd= %d \n", client_data.xian_dj_tele_op_a_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_left_rocker_x_client_cmd= %f \n", client_data.xian_dj_tele_op_left_rocker_x_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_left_rocker_y_client_cmd= %f \n", client_data.xian_dj_tele_op_left_rocker_y_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_right_rocker_x_client_cmd= %f \n", client_data.xian_dj_tele_op_right_rocker_x_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_right_rocker_y_client_cmd= %f \n", client_data.xian_dj_tele_op_right_rocker_y_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_r1_client_cmd= %d \n", client_data.xian_dj_tele_op_r1_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_r2_client_cmd= %d \n", client_data.xian_dj_tele_op_r2_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_l1_client_cmd= %d \n", client_data.xian_dj_tele_op_l1_client_cmd);
+                    // printf("收到数据：xian_dj_tele_op_l2_client_cmd= %d \n", client_data.xian_dj_tele_op_l2_client_cmd);
+                    someMethod();
+
+                    xian_dj_tele_op_controller_client_tcp_heart_beat = client_data.xian_dj_tele_op_controller_client_tcp_heart_beat;
+                    xian_dj_tele_op_left_server_cmd = client_data.xian_dj_tele_op_left_client_cmd;
+                    xian_dj_tele_op_right_server_cmd = client_data.xian_dj_tele_op_right_client_cmd;
+                    xian_dj_tele_op_up_server_cmd = client_data.xian_dj_tele_op_up_client_cmd;
+                    xian_dj_tele_op_down_server_cmd = client_data.xian_dj_tele_op_down_client_cmd;
+                    xian_dj_tele_op_x_server_cmd = client_data.xian_dj_tele_op_x_client_cmd;
+                    xian_dj_tele_op_b_server_cmd = client_data.xian_dj_tele_op_b_client_cmd;
+                    xian_dj_tele_op_y_server_cmd = client_data.xian_dj_tele_op_y_client_cmd;
+                    xian_dj_tele_op_a_server_cmd = client_data.xian_dj_tele_op_a_client_cmd;
+                    xian_dj_tele_op_left_rocker_x_server_cmd = client_data.xian_dj_tele_op_left_rocker_x_client_cmd;
+                    xian_dj_tele_op_left_rocker_y_server_cmd = client_data.xian_dj_tele_op_left_rocker_y_client_cmd;
+                    xian_dj_tele_op_right_rocker_x_server_cmd = client_data.xian_dj_tele_op_right_rocker_x_client_cmd;
+                    xian_dj_tele_op_right_rocker_y_server_cmd = client_data.xian_dj_tele_op_right_rocker_y_client_cmd;
+                    xian_dj_tele_op_r1_server_cmd = client_data.xian_dj_tele_op_r1_client_cmd;
+                    xian_dj_tele_op_r2_server_cmd = client_data.xian_dj_tele_op_r2_client_cmd;
+                    xian_dj_tele_op_l1_server_cmd = client_data.xian_dj_tele_op_l1_client_cmd;
+                    xian_dj_tele_op_l2_server_cmd = client_data.xian_dj_tele_op_l2_client_cmd;
+                    
+                    
+
+                    // 发送响应
+                    server_data.xian_dj_tele_op_controller_server_tcp_heart_beat = xian_dj_tele_op_controller_server_heart_beat;
+                    if (!server.sendData(client_fd, server_data)) 
+                    {
+                        std::cout << "向客户端 " << client_fd << " 发送失败，关闭连接" << std::endl;
+                        server.closeClient(client_fd);
+                    }
+
                 }
+                else if (recv_len < 0) 
+                {
+                    // 连接出错或断开
+                    server.closeClient(client_fd);
 
+                    xian_dj_tele_op_controller_client_tcp_heart_beat = 0;
+                    xian_dj_tele_op_left_server_cmd = 0;
+                    xian_dj_tele_op_right_server_cmd = 0;
+                    xian_dj_tele_op_up_server_cmd = 0;
+                    xian_dj_tele_op_down_server_cmd = 0;
+                    xian_dj_tele_op_x_server_cmd = 0;
+                    xian_dj_tele_op_b_server_cmd = 0;
+                    xian_dj_tele_op_y_server_cmd = 0;
+                    xian_dj_tele_op_a_server_cmd = 0;
+                    xian_dj_tele_op_left_rocker_x_server_cmd = 0;
+                    xian_dj_tele_op_left_rocker_y_server_cmd = 0;
+                    xian_dj_tele_op_right_rocker_x_server_cmd = 0;
+                    xian_dj_tele_op_right_rocker_y_server_cmd = 0;
+                    xian_dj_tele_op_r1_server_cmd = 0;
+                    xian_dj_tele_op_r2_server_cmd = 0;
+                    xian_dj_tele_op_l1_server_cmd = 0;
+                    xian_dj_tele_op_l2_server_cmd = 0;
+                    printf("recieve client data failed \n");
+
+                }
+                // recv_len == 0 表示超时，没有数据，继续处理其他客户端
+
+                // 发布话题
+                
+                pub_msg.xian_dj_tele_op_left_server_cmd = xian_dj_tele_op_left_server_cmd;
+                pub_msg.xian_dj_tele_op_right_server_cmd = xian_dj_tele_op_right_server_cmd;
+                pub_msg.xian_dj_tele_op_up_server_cmd = xian_dj_tele_op_up_server_cmd;
+                pub_msg.xian_dj_tele_op_down_server_cmd= xian_dj_tele_op_down_server_cmd;
+                pub_msg.xian_dj_tele_op_x_server_cmd = xian_dj_tele_op_x_server_cmd;
+                pub_msg.xian_dj_tele_op_b_server_cmd = xian_dj_tele_op_b_server_cmd;
+                pub_msg.xian_dj_tele_op_y_server_cmd = xian_dj_tele_op_y_server_cmd;
+                pub_msg.xian_dj_tele_op_a_server_cmd = xian_dj_tele_op_a_server_cmd;
+                pub_msg.xian_dj_tele_op_left_rocker_x_server_cmd = xian_dj_tele_op_left_rocker_x_server_cmd;
+                pub_msg.xian_dj_tele_op_left_rocker_y_server_cmd = xian_dj_tele_op_left_rocker_y_server_cmd;
+                pub_msg.xian_dj_tele_op_right_rocker_x_server_cmd = xian_dj_tele_op_right_rocker_x_server_cmd;
+                pub_msg.xian_dj_tele_op_right_rocker_y_server_cmd = xian_dj_tele_op_right_rocker_y_server_cmd;
+                pub_msg.xian_dj_tele_op_r1_server_cmd = xian_dj_tele_op_r1_server_cmd;
+                pub_msg.xian_dj_tele_op_r2_server_cmd = xian_dj_tele_op_r2_server_cmd;
+                pub_msg.xian_dj_tele_op_l1_server_cmd = xian_dj_tele_op_l1_server_cmd;
+                pub_msg.xian_dj_tele_op_l2_server_cmd = xian_dj_tele_op_l2_server_cmd;
+                pub_msg.xian_dj_tele_op_controller_client_tcp_heart_beat = xian_dj_tele_op_controller_client_tcp_heart_beat;
+                xian_dj_tele_op_controller_server_pub.publish(pub_msg);
             }
-            else if (recv_len < 0) 
-            {
-                // 连接出错或断开
-                server.closeClient(client_fd);
-            }
-            // recv_len == 0 表示超时，没有数据，继续处理其他客户端
-
-
-        }
-        // 短暂休眠，避免CPU占用过高
-        usleep(10000); // 10ms
-        return 0;
-
-
-
-
-            
-        //     // 数据交互循环
-        //     while (true) 
-        //     {
-        //         usleep(100 * 1000); // 100 ms
-        //         // 接收数据
-        //         int recv_len = server.receiveData(client_data);
-        //         if (recv_len <= 0) 
-        //         {
-        //             break;
-        //         }
-        //         printf("收到数据：xian_dj_tele_op_controller_client_tcp_heart_beat= %d \n", client_data.xian_dj_tele_op_controller_client_tcp_heart_beat);
-        //         printf("收到数据：xian_dj_tele_op_left_client_cmd = %d \n", client_data.xian_dj_tele_op_left_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_right_client_cmd = %d \n", client_data.xian_dj_tele_op_right_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_up_client_cmd = %d \n", client_data.xian_dj_tele_op_up_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_down_client_cmd= %d \n", client_data.xian_dj_tele_op_down_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_x_client_cmd= %d \n", client_data.xian_dj_tele_op_x_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_b_client_cmd= %d \n", client_data.xian_dj_tele_op_b_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_y_client_cmd= %d \n", client_data.xian_dj_tele_op_y_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_a_client_cmd= %d \n", client_data.xian_dj_tele_op_a_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_left_rocker_x_client_cmd= %f \n", client_data.xian_dj_tele_op_left_rocker_x_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_left_rocker_y_client_cmd= %f \n", client_data.xian_dj_tele_op_left_rocker_y_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_right_rocker_x_client_cmd= %f \n", client_data.xian_dj_tele_op_right_rocker_x_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_right_rocker_y_client_cmd= %f \n", client_data.xian_dj_tele_op_right_rocker_y_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_r1_client_cmd= %d \n", client_data.xian_dj_tele_op_r1_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_r2_client_cmd= %d \n", client_data.xian_dj_tele_op_r2_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_l1_client_cmd= %d \n", client_data.xian_dj_tele_op_l1_client_cmd);
-        //         printf("收到数据：xian_dj_tele_op_l2_client_cmd= %d \n", client_data.xian_dj_tele_op_l2_client_cmd);
-
-        //         xian_dj_tele_op_controller_client_tcp_heart_beat = client_data.xian_dj_tele_op_controller_client_tcp_heart_beat;
-        //         xian_dj_tele_op_left_server_cmd = client_data.xian_dj_tele_op_left_client_cmd;
-        //         xian_dj_tele_op_right_server_cmd = client_data.xian_dj_tele_op_right_client_cmd;
-        //         xian_dj_tele_op_up_server_cmd = client_data.xian_dj_tele_op_up_client_cmd;
-        //         xian_dj_tele_op_down_server_cmd = client_data.xian_dj_tele_op_down_client_cmd;
-        //         xian_dj_tele_op_x_server_cmd = client_data.xian_dj_tele_op_x_client_cmd;
-        //         xian_dj_tele_op_b_server_cmd = client_data.xian_dj_tele_op_b_client_cmd;
-        //         xian_dj_tele_op_y_server_cmd = client_data.xian_dj_tele_op_y_client_cmd;
-        //         xian_dj_tele_op_a_server_cmd = client_data.xian_dj_tele_op_a_client_cmd;
-        //         xian_dj_tele_op_left_rocker_x_server_cmd = client_data.xian_dj_tele_op_left_rocker_x_client_cmd;
-        //         xian_dj_tele_op_left_rocker_y_server_cmd = client_data.xian_dj_tele_op_left_rocker_y_client_cmd;
-        //         xian_dj_tele_op_right_rocker_x_server_cmd = client_data.xian_dj_tele_op_right_rocker_x_client_cmd;
-        //         xian_dj_tele_op_right_rocker_y_server_cmd = client_data.xian_dj_tele_op_right_rocker_y_client_cmd;
-        //         xian_dj_tele_op_r1_server_cmd = client_data.xian_dj_tele_op_r1_client_cmd;
-        //         xian_dj_tele_op_r2_server_cmd = client_data.xian_dj_tele_op_r2_client_cmd;
-        //         xian_dj_tele_op_l1_server_cmd = client_data.xian_dj_tele_op_l1_client_cmd;
-        //         xian_dj_tele_op_l2_server_cmd = client_data.xian_dj_tele_op_l2_client_cmd;
-        //         // set param server
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_left_server_cmd", xian_dj_tele_op_left_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_right_server_cmd", xian_dj_tele_op_right_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_up_server_cmd", xian_dj_tele_op_up_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_down_server_cmd", xian_dj_tele_op_down_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_x_server_cmd", xian_dj_tele_op_x_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_b_server_cmd", xian_dj_tele_op_b_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_y_server_cmd", xian_dj_tele_op_y_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_a_server_cmd", xian_dj_tele_op_a_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_left_rocker_x_server_cmd", xian_dj_tele_op_left_rocker_x_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_left_rocker_y_server_cmd", xian_dj_tele_op_left_rocker_y_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_right_rocker_x_server_cmd", xian_dj_tele_op_right_rocker_x_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_right_rocker_y_server_cmd", xian_dj_tele_op_right_rocker_y_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_r1_server_cmd", xian_dj_tele_op_r1_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_r2_server_cmd", xian_dj_tele_op_r2_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_l1_server_cmd", xian_dj_tele_op_l1_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_l2_server_cmd", xian_dj_tele_op_l2_server_cmd); 
-        //         ros::param::set("/xian_dj_tele_op_params_server/xian_dj_tele_op_controller_client_tcp_heart_beat", xian_dj_tele_op_controller_client_tcp_heart_beat); 
-
-        //         // 构造并发送响应
-        //         server_data.xian_dj_tele_op_controller_server_tcp_heart_beat = xian_dj_tele_op_controller_server_heart_beat;
-        //         printf("发送client的数据：xian_dj_tele_op_controller_server_tcp_heart_beat= %d \n", server_data.xian_dj_tele_op_controller_server_tcp_heart_beat);
-        //         if (!server.sendData(server_data)) 
-        //         {
-        //             break;
-        //         }
-        //     }
-            
-        //     // 关闭当前客户端连接
-        //     server.closeClient();
-        //     return 0;
+            // 短暂休眠，避免CPU占用过高
+            usleep(10000); // 10ms
+            return 0;
         }
 
 };
@@ -686,8 +587,7 @@ int main(int argc, char** argv)
     ros::AsyncSpinner spinner(0);
     spinner.start();
 
-    // xian_dj_tele_op_controller_server.m_timer_heart_beat = nh_2.createWallTimer(ros::WallDuration(1.0), &XianDjTeleOpControllerServer::m_timer_heart_beat_func, &xian_dj_tele_op_controller_server);
-    xian_dj_tele_op_controller_server.m_timer_control = nh_2.createWallTimer(ros::WallDuration(0.2), &XianDjTeleOpControllerServer::m_timer_control_func, &xian_dj_tele_op_controller_server);
+    xian_dj_tele_op_controller_server.m_timer_control = nh_2.createWallTimer(ros::WallDuration(0.1), &XianDjTeleOpControllerServer::m_timer_control_func, &xian_dj_tele_op_controller_server);
     ros::waitForShutdown();
     
     // ros::spin();

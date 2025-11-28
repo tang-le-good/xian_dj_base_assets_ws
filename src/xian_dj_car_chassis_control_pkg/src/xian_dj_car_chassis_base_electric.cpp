@@ -14,6 +14,9 @@
 #include <thread>
 #include <chrono>
 #include <cstdint>
+#include <std_msgs/UInt16.h>
+#include <std_msgs/Int32.h>
+#include <std_msgs/String.h>
 
 // #define SERVER_IP "192.168.1.132"
 // #define SERVER_PORT 7886
@@ -170,7 +173,7 @@ class TCPClient
             
             // 设置3秒超时
             struct timeval timeout;
-            timeout.tv_sec = 3;
+            timeout.tv_sec = 1;
             timeout.tv_usec = 0;
             
             // 等待socket可读
@@ -209,15 +212,21 @@ class XianDjCarChassisBaseElectric
 {
 
     public:
-        XianDjCarChassisBaseElectric(const std::string& ip, int port, const std::string& motor_driver):server_ip_(ip), server_port_(port), motor_driver_(motor_driver)
+        XianDjCarChassisBaseElectric(const std::string& ip, int port, const std::string& pub_topic_name, const std::string& sub_topic_name)
+                                    :server_ip_(ip), server_port_(port), pub_topic_name_(pub_topic_name), sub_topic_name_(sub_topic_name)
         {
             std::cout << "xian_dj_car_chassis_base_electric:  节点已启动" << std::endl;
-            // server_ip_ = ip;
-            // server_port_ = port;
+            ros::NodeHandle nh;
+            xian_dj_car_chassis_base_electric_state_pub = nh.advertise<std_msgs::String>(pub_topic_name_, 1);
+            xian_dj_car_chassis_base_electric_sub = nh.subscribe<std_msgs::Int32>(sub_topic_name_, 10, &XianDjCarChassisBaseElectric::controller_callback, this);
             init();
         }
         ros::WallTimer m_timer_Main_Func;
-        ros::WallTimer m_timer_HeartBeat;
+
+        void controller_callback(const std_msgs::Int32::ConstPtr &data)
+        {
+            write_velocity = data->data;
+        }
 
         void m_timer_Main_Func_f(const ros::WallTimerEvent& event)
         {
@@ -239,6 +248,7 @@ class XianDjCarChassisBaseElectric
                 
                 if(result[0]==0) // 如果没有使能
                 {
+                    // 速度写0
                     client_address_0 = 0x02; 
                     client_address_1 = 0x06;
                     client_address_2 = 0x00; 
@@ -259,6 +269,10 @@ class XianDjCarChassisBaseElectric
                                                             client_address_3, client_address_4,client_address_5);
                 }
             }
+            else
+            {
+                xian_dj_car_chassis_base_electric_heart_beat = 0;
+            }
             
 
             // velocity_read
@@ -270,7 +284,6 @@ class XianDjCarChassisBaseElectric
             client_address_5 = 0x01; 
             tcp_server_date = this->command_callback(client_address_0, client_address_1,client_address_2,
                                                      client_address_3, client_address_4,client_address_5);
-            int velocity_read = 0;
             if(tcp_server_date!=nullptr)
             {
                 unsigned char velocity_read_high = *(tcp_server_date+3);
@@ -278,23 +291,12 @@ class XianDjCarChassisBaseElectric
                 velocity_read = combineBytes(velocity_read_high, velocity_read_low);
                 // printf("读取速度 : %d \n", velocity_read);
             }
-            
+            else
+            {
+                xian_dj_car_chassis_base_electric_heart_beat = 0;
+            }
 
             // velocity_write
-            ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_left_wheel_write_velocity", xian_dj_car_chassis_left_wheel_write_velocity); 
-            ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_right_wheel_write_velocity", xian_dj_car_chassis_right_wheel_write_velocity); 
-            int16_t write_velocity = 0;
-            if(motor_driver_ == "left_driver")
-            {
-                write_velocity = xian_dj_car_chassis_left_wheel_write_velocity;
-                ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_left_wheel_read_velocity", velocity_read); 
-            }
-            else if(motor_driver_ == "right_driver")
-            {
-                write_velocity = xian_dj_car_chassis_right_wheel_write_velocity;
-                ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_right_wheel_read_velocity", velocity_read);
-            }  
-
             unsigned char high_byte, low_byte;
             SplitInt16ToBytes(write_velocity, high_byte, low_byte);
             client_address_0 = 0x02; 
@@ -302,7 +304,7 @@ class XianDjCarChassisBaseElectric
             client_address_2 = 0x00; 
             client_address_3 = 0x10; 
             client_address_4 = high_byte;
-            client_address_5 = low_byte; 
+            client_address_5 = low_byte;
             tcp_server_date = this->command_callback(client_address_0, client_address_1,client_address_2,
                                                      client_address_3, client_address_4,client_address_5);
 
@@ -316,66 +318,21 @@ class XianDjCarChassisBaseElectric
                 //                                                                         *(tcp_server_date+5)
                 //                                                                         );
             }
-        }
-        void m_timer_HeartBeat_f(const ros::WallTimerEvent& event)
-        {
-            date_recive_counter_pre = date_recive_counter_cur;
-            date_recive_counter_cur = date_recive_counter;
-
-            if(date_recive_counter_pre == date_recive_counter_cur)
-            {
-                timeout_counter += 1;
-                timeout_counter = timeout_counter > 1000 ? 5 : (timeout_counter + 1);
-            }
             else
             {
-                timeout_counter = 0;
+                xian_dj_car_chassis_base_electric_heart_beat = 0;
             }
-            if(timeout_counter >= 5)
-            {
-                if(motor_driver_ == "left_driver")
-                {
-                    ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_left_heart_beat", xian_dj_car_chassis_base_electric_left_heart_beat); 
-                    std::cout << "xian_dj_car_chassis_base_electric_left_heart_beat: " << xian_dj_car_chassis_base_electric_left_heart_beat << std::endl;
-                    counter = 0;
-                    ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_left_heart_beat", counter); 
-                }
-                else if(motor_driver_ == "right_driver")
-                {
-                    ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_right_heart_beat", xian_dj_car_chassis_base_electric_right_heart_beat); 
-                    std::cout << "xian_dj_car_chassis_base_electric_right_heart_beat: " << xian_dj_car_chassis_base_electric_right_heart_beat << std::endl;
-                    counter = 0;
-                    ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_right_heart_beat", counter);
-                }  
-            }
-            else
-            {
-                if(motor_driver_ == "left_driver")
-                {
-                    ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_left_heart_beat", xian_dj_car_chassis_base_electric_left_heart_beat); 
-                    std::cout << "xian_dj_car_chassis_base_electric_left_heart_beat: " << xian_dj_car_chassis_base_electric_left_heart_beat << std::endl;
-                    counter = counter > 1000 ? 0 : (counter + 1);
-                    ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_left_heart_beat", counter); 
-                }
-                else if(motor_driver_ == "right_driver")
-                {
-                    ros::param::get("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_right_heart_beat", xian_dj_car_chassis_base_electric_right_heart_beat); 
-                    std::cout << "xian_dj_car_chassis_base_electric_right_heart_beat: " << xian_dj_car_chassis_base_electric_right_heart_beat << std::endl;
-                    counter = counter > 1000 ? 0 : (counter + 1);
-                    ros::param::set("/xian_dj_car_chassis_params_server/xian_dj_car_chassis_base_electric_right_heart_beat", counter);
-                } 
-            }
+            std::string pub_sting = std::to_string(velocity_read) + "   " + std::to_string(xian_dj_car_chassis_base_electric_heart_beat);
+            pub_msg.data = pub_sting.c_str();
+            xian_dj_car_chassis_base_electric_state_pub.publish(pub_msg);
         }
+       
     private:
         int counter = 0;
-        int date_recive_counter = 0;
-        int timeout_counter = 0;
-        int date_recive_counter_cur = 0;
-        int date_recive_counter_pre = 0;
-        int xian_dj_car_chassis_base_electric_left_heart_beat = 0;
-        int xian_dj_car_chassis_base_electric_right_heart_beat = 0;
+        int xian_dj_car_chassis_base_electric_heart_beat = 0;
         std::string server_ip_;
-        std::string motor_driver_;
+        std::string pub_topic_name_;
+        std::string sub_topic_name_;
         int server_port_;
         TCPClient client{server_ip_, server_port_};
         struct client2server client_data;
@@ -387,9 +344,12 @@ class XianDjCarChassisBaseElectric
         unsigned char client_address_4;
         unsigned char client_address_5;
         unsigned char * tcp_server_date;
-        int xian_dj_car_chassis_left_wheel_write_velocity=0;
-        int xian_dj_car_chassis_right_wheel_write_velocity=0;
 
+        int velocity_read = 0;
+        int16_t write_velocity = 0; 
+        ros::Subscriber xian_dj_car_chassis_base_electric_sub; // 订阅control相关的消息
+        ros::Publisher xian_dj_car_chassis_base_electric_state_pub; 
+        std_msgs::String pub_msg;
     
                
         int init()
@@ -453,7 +413,7 @@ class XianDjCarChassisBaseElectric
             // 接收响应（带3秒超时）
             if (client.receiveData(server_data)) 
             {
-                date_recive_counter = date_recive_counter > 1000 ? 0 : (date_recive_counter + 1);
+                xian_dj_car_chassis_base_electric_heart_beat = xian_dj_car_chassis_base_electric_heart_beat > 1000 ? 0 : (xian_dj_car_chassis_base_electric_heart_beat + 1);
                 // printf("date_recive_counter:%d \n", date_recive_counter);
                 
                 tcp_date[0] = server_data.address_0;
@@ -469,7 +429,8 @@ class XianDjCarChassisBaseElectric
             } 
             else 
             {
-                // 3秒超时后会执行到这里                
+                // 1秒超时后会执行到这里   
+                             
                 return nullptr;
             }
         }
@@ -572,7 +533,8 @@ int main(int argc, char** argv)
     ros::NodeHandle nh_2;
 
     std::string server_ip_;
-    std::string motor_driver_;
+    std::string pub_topic_name_;
+    std::string sub_topic_name_;
     int server_port_;
 
     ros::NodeHandle private_nh("~");
@@ -580,17 +542,17 @@ int main(int argc, char** argv)
     // 从参数服务器获取私有参数[10](@ref)
     private_nh.param<int>("server_port", server_port_, 7886);
     private_nh.param<std::string>("server_ip", server_ip_, "192.168.1.132");
-    private_nh.param<std::string>("motor_driver", motor_driver_, "left_driver");
+    private_nh.param<std::string>("pub_topic_name", pub_topic_name_, "left_driver");
+    private_nh.param<std::string>("sub_topic_name", sub_topic_name_, "left_driver");
     
-    ROS_INFO("server_ip: %s, server_port: %d, motor_driver: %s", 
-                server_ip_.c_str(), server_port_, motor_driver_.c_str());
-    XianDjCarChassisBaseElectric xian_dj_car_chassis_base_electric_node{server_ip_, server_port_, motor_driver_};
+    ROS_INFO("server_ip: %s, server_port: %d, pub_topic_name: %s, sub_topic_name: %s", 
+                server_ip_.c_str(), server_port_, pub_topic_name_.c_str(), sub_topic_name_.c_str());
+    XianDjCarChassisBaseElectric xian_dj_car_chassis_base_electric_node{server_ip_, server_port_, pub_topic_name_, sub_topic_name_};
 
     ros::AsyncSpinner spinner(0);
     spinner.start();
 
-    xian_dj_car_chassis_base_electric_node.m_timer_HeartBeat = nh_2.createWallTimer(ros::WallDuration(1), &XianDjCarChassisBaseElectric::m_timer_HeartBeat_f, &xian_dj_car_chassis_base_electric_node);
-    xian_dj_car_chassis_base_electric_node.m_timer_Main_Func = nh_2.createWallTimer(ros::WallDuration(0.2), &XianDjCarChassisBaseElectric::m_timer_Main_Func_f, &xian_dj_car_chassis_base_electric_node);
+    xian_dj_car_chassis_base_electric_node.m_timer_Main_Func = nh_2.createWallTimer(ros::WallDuration(0.1), &XianDjCarChassisBaseElectric::m_timer_Main_Func_f, &xian_dj_car_chassis_base_electric_node);
 
     ros::waitForShutdown();
 

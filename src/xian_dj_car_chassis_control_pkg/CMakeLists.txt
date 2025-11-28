@@ -53,7 +53,7 @@ find_package(catkin REQUIRED COMPONENTS
 # Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  xian_dj_car_chassis_back_end.msg
+  xian_dj_car_chassis_diff_driver_control.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -220,6 +220,4 @@ add_executable(xian_dj_car_chassis_base_electric src/xian_dj_car_chassis_base_el
 add_dependencies(xian_dj_car_chassis_base_electric ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(xian_dj_car_chassis_base_electric ${catkin_LIBRARIES})
 
-add_executable(xian_dj_car_chassis_back_end src/xian_dj_car_chassis_back_end.cpp )
-add_dependencies(xian_dj_car_chassis_back_end ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(xian_dj_car_chassis_back_end ${catkin_LIBRARIES})
+

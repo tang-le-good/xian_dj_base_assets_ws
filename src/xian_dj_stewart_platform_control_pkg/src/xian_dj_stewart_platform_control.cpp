@@ -7,275 +7,283 @@
 #include <pcl/filters/crop_box.h>
 #include <tf/transform_listener.h>
 #include <Eigen/Dense>
-
+#include <std_msgs/UInt16.h>
+#include "xian_dj_stewart_platform_control_pkg/xian_dj_stewart_platform_control.h"
+#include "xian_dj_stewart_platform_control_pkg/xian_dj_stewart_platform_base_electric.h"
 class XianDjStewartPlatformControl
 {
     public:
         XianDjStewartPlatformControl()
         {
             // 创建一个ROS节点句柄
-            // ros::NodeHandle nh;
+            ros::NodeHandle nh;
+            stewart_platform_control_sub = nh.subscribe<xian_dj_stewart_platform_control_pkg::xian_dj_stewart_platform_control>("xian_dj_stewart_platform_control_msg", 10, &XianDjStewartPlatformControl::control_callback, this);
+            stewart_platform_control_state_pub = nh.advertise<std_msgs::UInt16>("xian_dj_stewart_platform_control_state_msg", 1);
+            stewart_platform_control_pub = nh.advertise<xian_dj_stewart_platform_control_pkg::xian_dj_stewart_platform_base_electric>("xian_dj_stewart_platform_base_electric_msg", 1);
+
         }
             ros::WallTimer m_timer_heart_beat;
-            ros::WallTimer m_timer_control;
+            
 
-         void m_timer_heart_beat_func(const ros::WallTimerEvent& event)
+        void control_callback(const xian_dj_stewart_platform_control_pkg::xian_dj_stewart_platform_control::ConstPtr &data)
         {
-            ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_control_heart_beat", xian_dj_stewart_platform_control_heart_beat); 
-            std::cout << "xian_dj_stewart_platform_control_heart_beat: " << xian_dj_stewart_platform_control_heart_beat << std::endl;
-            counter = counter > 1000 ? 0 : (counter + 1);
-            ros::param::set("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_control_heart_beat", counter);  // 自行替换
-        }
+            input_alpha = data->xian_dj_stewart_platform_input_alpha_cmd;
+            input_beta = data->xian_dj_stewart_platform_input_beta_cmd;
+            input_gamma = data->xian_dj_stewart_platform_input_gamma_cmd;
+            input_x = data->xian_dj_stewart_platform_input_x_cmd;
+            input_y = data->xian_dj_stewart_platform_input_y_cmd;
+            input_z = data->xian_dj_stewart_platform_input_z_cmd;
 
-        void m_timer_control_func(const ros::WallTimerEvent& event)
-        {
-            ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_control_error", xian_dj_stewart_platform_control_error); 
-            if(xian_dj_stewart_platform_control_error != 0)
+            input_z = input_z + 168;
+            printf("input_alpha: %.02f input_beta: %.02f input_gamma: %.02f input_x: %.02f input_y: %.02f input_z: %.02f \n", 
+                            input_alpha, input_beta, input_gamma ,input_x ,input_y ,input_z);
+
+            // 求A_i
+            A_1 = R_z(theta_1, A_is, PI);
+            A_2 = R_z(theta_2, A_is, PI);
+            A_3 = R_z(theta_3, A_is, PI);
+            A_4 = R_z(theta_4, A_is, PI);
+            A_5 = R_z(theta_5, A_is, PI);
+            A_6 = R_z(theta_6, A_is, PI);
+
+            // 求C_i
+            C_1 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, C_1m, PI);
+            C_2 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, C_2m, PI);
+            C_3 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, C_3m, PI);
+            C_4 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, C_4m, PI);
+            C_5 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, C_5m, PI);
+            C_6 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, C_6m, PI);
+            camera_center = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, camera_center_m, PI);
+
+            // 求C_iA_i向量
+            C_1A_1 = PointsSub(A_1, C_1);
+            C_2A_2 = PointsSub(A_2, C_2);
+            C_3A_3 = PointsSub(A_3, C_3);
+            C_4A_4 = PointsSub(A_4, C_4);
+            C_5A_5 = PointsSub(A_5, C_5);
+            C_6A_6 = PointsSub(A_6, C_6);
+
+            // 求omega_i
+            ac_11 = C_1A_1.x;
+            ac_21 = C_2A_2.x;
+            ac_31 = C_3A_3.x;
+            ac_41 = C_4A_4.x;
+            ac_51 = C_5A_5.x;
+            ac_61 = C_6A_6.x;
+
+            ac_12 = C_1A_1.y;
+            ac_22 = C_2A_2.y;
+            ac_32 = C_3A_3.y;
+            ac_42 = C_4A_4.y;
+            ac_52 = C_5A_5.y;
+            ac_62 = C_6A_6.y;
+
+            ac_13 = C_1A_1.z;
+            ac_23 = C_2A_2.z;
+            ac_33 = C_3A_3.z;
+            ac_43 = C_4A_4.z;
+            ac_53 = C_5A_5.z;
+            ac_63 = C_6A_6.z;
+
+            M1_11 = cos(theta_1 * PI / 180.0) * cos(phi_1 * PI / 180.0) - sin(theta_1 * PI / 180.0) * sin(phi_1 * PI / 180.0);
+            M2_11 = cos(theta_2 * PI / 180.0) * cos(phi_2 * PI / 180.0) - sin(theta_2 * PI / 180.0) * sin(phi_2 * PI / 180.0);
+            M3_11 = cos(theta_3 * PI / 180.0) * cos(phi_3 * PI / 180.0) - sin(theta_3 * PI / 180.0) * sin(phi_3 * PI / 180.0);
+            M4_11 = cos(theta_4 * PI / 180.0) * cos(phi_4 * PI / 180.0) - sin(theta_4 * PI / 180.0) * sin(phi_4 * PI / 180.0);
+            M5_11 = cos(theta_5 * PI / 180.0) * cos(phi_5 * PI / 180.0) - sin(theta_5 * PI / 180.0) * sin(phi_5 * PI / 180.0);
+            M6_11 = cos(theta_6 * PI / 180.0) * cos(phi_6 * PI / 180.0) - sin(theta_6 * PI / 180.0) * sin(phi_6 * PI / 180.0);
+
+            M1_21 = sin(theta_1 * PI / 180.0) * cos(phi_1 * PI / 180.0) + cos(theta_1 * PI / 180.0) * sin(phi_1 * PI / 180.0);
+            M2_21 = sin(theta_2 * PI / 180.0) * cos(phi_2 * PI / 180.0) + cos(theta_2 * PI / 180.0) * sin(phi_2 * PI / 180.0);
+            M3_21 = sin(theta_3 * PI / 180.0) * cos(phi_3 * PI / 180.0) + cos(theta_3 * PI / 180.0) * sin(phi_3 * PI / 180.0);
+            M4_21 = sin(theta_4 * PI / 180.0) * cos(phi_4 * PI / 180.0) + cos(theta_4 * PI / 180.0) * sin(phi_4 * PI / 180.0);
+            M5_21 = sin(theta_5 * PI / 180.0) * cos(phi_5 * PI / 180.0) + cos(theta_5 * PI / 180.0) * sin(phi_5 * PI / 180.0);
+            M6_21 = sin(theta_6 * PI / 180.0) * cos(phi_6 * PI / 180.0) + cos(theta_6 * PI / 180.0) * sin(phi_6 * PI / 180.0);
+
+            a_1 = -2 * LA * ac_13;
+            a_2 = -2 * LA * ac_23;
+            a_3 = -2 * LA * ac_33;
+            a_4 = -2 * LA * ac_43;
+            a_5 = -2 * LA * ac_53;
+            a_6 = -2 * LA * ac_63;
+
+            b_1 = 2 * LA * M1_11 * ac_11 + 2 * LA * M1_21 * ac_12;
+            b_2 = 2 * LA * M2_11 * ac_21 + 2 * LA * M2_21 * ac_22;
+            b_3 = 2 * LA * M3_11 * ac_31 + 2 * LA * M3_21 * ac_32;
+            b_4 = 2 * LA * M4_11 * ac_41 + 2 * LA * M4_21 * ac_42;
+            b_5 = 2 * LA * M5_11 * ac_51 + 2 * LA * M5_21 * ac_52;
+            b_6 = 2 * LA * M6_11 * ac_61 + 2 * LA * M6_21 * ac_62;
+
+            LCs_1 = C_1A_1.x * C_1A_1.x + C_1A_1.y * C_1A_1.y + C_1A_1.z * C_1A_1.z;
+            LCs_2 = C_2A_2.x * C_2A_2.x + C_2A_2.y * C_2A_2.y + C_2A_2.z * C_2A_2.z;
+            LCs_3 = C_3A_3.x * C_3A_3.x + C_3A_3.y * C_3A_3.y + C_3A_3.z * C_3A_3.z;
+            LCs_4 = C_4A_4.x * C_4A_4.x + C_4A_4.y * C_4A_4.y + C_4A_4.z * C_4A_4.z;
+            LCs_5 = C_5A_5.x * C_5A_5.x + C_5A_5.y * C_5A_5.y + C_5A_5.z * C_5A_5.z;
+            LCs_6 = C_6A_6.x * C_6A_6.x + C_6A_6.y * C_6A_6.y + C_6A_6.z * C_6A_6.z;
+
+            c_1 = LA*LA -LB*LB + LCs_1;
+            c_2 = LA*LA -LB*LB + LCs_2;
+            c_3 = LA*LA -LB*LB + LCs_3;
+            c_4 = LA*LA -LB*LB + LCs_4;
+            c_5 = LA*LA -LB*LB + LCs_5;
+            c_6 = LA*LA -LB*LB + LCs_6;
+
+            omega_1 = (std::asin(c_1/std::sqrt(a_1*a_1+b_1*b_1)) - std::atan(b_1/a_1)) / PI * 180.0;
+            omega_2 = (std::asin(c_2/std::sqrt(a_2*a_2+b_2*b_2)) - std::atan(b_2/a_2)) / PI * 180.0;
+            omega_3 = (std::asin(c_3/std::sqrt(a_3*a_3+b_3*b_3)) - std::atan(b_3/a_3)) / PI * 180.0;
+            omega_4 = (std::asin(c_4/std::sqrt(a_4*a_4+b_4*b_4)) - std::atan(b_4/a_4)) / PI * 180.0;
+            omega_5 = (std::asin(c_5/std::sqrt(a_5*a_5+b_5*b_5)) - std::atan(b_5/a_5)) / PI * 180.0;
+            omega_6 = (std::asin(c_6/std::sqrt(a_6*a_6+b_6*b_6)) - std::atan(b_6/a_6)) / PI * 180.0;        
+
+            // 动平台上的铰链约束角计算
+            // E点从动平台坐标系转化到静平台坐标系
+            E_1 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, E_1m, PI);
+            E_2 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, E_2m, PI);
+            E_3 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, E_3m, PI);
+            E_4 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, E_4m, PI);
+            E_5 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, E_5m, PI);
+            E_6 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, E_6m, PI);
+
+            // 求向量C_iE_i
+            C_1E_1_vec = PointsSub(E_1, C_1);
+            C_2E_2_vec = PointsSub(E_2, C_2);
+            C_3E_3_vec = PointsSub(E_3, C_3);
+            C_4E_4_vec = PointsSub(E_4, C_4);
+            C_5E_5_vec = PointsSub(E_5, C_5);
+            C_6E_6_vec = PointsSub(E_6, C_6);
+            // 求向量C_iB_i   
+            C_1B_1_vec = PointsSub(B_1, C_1);
+            C_2B_2_vec = PointsSub(B_2, C_2);
+            C_3B_3_vec = PointsSub(B_3, C_3);
+            C_4B_4_vec = PointsSub(B_4, C_4);
+            C_5B_5_vec = PointsSub(B_5, C_5);
+            C_6B_6_vec = PointsSub(B_6, C_6);
+
+            //计算铰链座轴线与连杆夹角
+            zeta_1 = ComputeConstraintAngular(C_1E_1_vec, C_1B_1_vec);
+            zeta_2 = ComputeConstraintAngular(C_2E_2_vec, C_2B_2_vec);
+            zeta_3 = ComputeConstraintAngular(C_3E_3_vec, C_3B_3_vec);
+            zeta_4 = ComputeConstraintAngular(C_4E_4_vec, C_4B_4_vec);
+            zeta_5 = ComputeConstraintAngular(C_5E_5_vec, C_5B_5_vec);
+            zeta_6 = ComputeConstraintAngular(C_6E_6_vec, C_6B_6_vec);           
+            
+            // 求B点，
+            // 求B_id
+            B_1d = R_y(omega_1, P_d, PI);
+            B_2d = R_y(omega_2, P_d, PI);
+            B_3d = R_y(omega_3, P_d, PI);
+            B_4d = R_y(omega_4, P_d, PI);
+            B_5d = R_y(omega_5, P_d, PI);
+            B_6d = R_y(omega_6, P_d, PI);
+
+            // 求B_is
+            B_1s = PointsAdd(R_z(phi_1, B_1d, PI), A_is);
+            B_2s = PointsAdd(R_z(phi_2, B_2d, PI), A_is);
+            B_3s = PointsAdd(R_z(phi_3, B_3d, PI), A_is);
+            B_4s = PointsAdd(R_z(phi_4, B_4d, PI), A_is);
+            B_5s = PointsAdd(R_z(phi_5, B_5d, PI), A_is);
+            B_6s = PointsAdd(R_z(phi_6, B_6d, PI), A_is);
+
+            // 求B_i
+            B_1 = R_z(theta_1, B_1s, PI);
+            B_2 = R_z(theta_2, B_2s, PI);
+            B_3 = R_z(theta_3, B_3s, PI);
+            B_4 = R_z(theta_4, B_4s, PI);
+            B_5 = R_z(theta_5, B_5s, PI);
+            B_6 = R_z(theta_6, B_6s, PI);
+            
+            //舵机上的铰链约束角计算
+            D_1d = R_y(omega_1, TD_id135, PI);
+            D_2d = R_y(omega_2, TD_id246, PI);
+            D_3d = R_y(omega_3, TD_id135, PI);
+            D_4d = R_y(omega_4, TD_id246, PI);
+            D_5d = R_y(omega_5, TD_id135, PI);
+            D_6d = R_y(omega_6, TD_id246, PI);
+
+            D_1s = PointsAdd(R_z(phi_1, D_1d, PI), A_is);
+            D_2s = PointsAdd(R_z(phi_2, D_2d, PI), A_is);
+            D_3s = PointsAdd(R_z(phi_3, D_3d, PI), A_is);
+            D_4s = PointsAdd(R_z(phi_4, D_4d, PI), A_is);
+            D_5s = PointsAdd(R_z(phi_5, D_5d, PI), A_is);
+            D_6s = PointsAdd(R_z(phi_6, D_6d, PI), A_is);
+
+            D_1 = R_z(theta_1, D_1s, PI);
+            D_2 = R_z(theta_2, D_2s, PI);
+            D_3 = R_z(theta_3, D_3s, PI);
+            D_4 = R_z(theta_4, D_4s, PI);
+            D_5 = R_z(theta_5, D_5s, PI);
+            D_6 = R_z(theta_6, D_6s, PI);
+            
+            // 求向量B_iD_i
+            B_1D_1_vec = PointsSub(D_1, B_1);
+            B_2D_2_vec = PointsSub(D_2, B_2);
+            B_3D_3_vec = PointsSub(D_3, B_3);
+            B_4D_4_vec = PointsSub(D_4, B_4);
+            B_5D_5_vec = PointsSub(D_5, B_5);
+            B_6D_6_vec = PointsSub(D_6, B_6);
+            // 求向量B_iC_i   
+            B_1C_1_vec = PointsSub(C_1, B_1);
+            B_2C_2_vec = PointsSub(C_2, B_2);
+            B_3C_3_vec = PointsSub(C_3, B_3);
+            B_4C_4_vec = PointsSub(C_4, B_4);
+            B_5C_5_vec = PointsSub(C_5, B_5);
+            B_6C_6_vec = PointsSub(C_6, B_6);
+
+            delta_1 = 90.0 - ComputeConstraintAngular(B_1D_1_vec, B_1C_1_vec);
+            delta_2 = 90.0 - ComputeConstraintAngular(B_2D_2_vec, B_2C_2_vec);
+            delta_3 = 90.0 - ComputeConstraintAngular(B_3D_3_vec, B_3C_3_vec);
+            delta_4 = 90.0 - ComputeConstraintAngular(B_4D_4_vec, B_4C_4_vec);
+            delta_5 = 90.0 - ComputeConstraintAngular(B_5D_5_vec, B_5C_5_vec);
+            delta_6 = 90.0 - ComputeConstraintAngular(B_6D_6_vec, B_6C_6_vec);
+
+            
+            if (std::isnan(omega_1) || std::isnan(omega_2) || std::isnan(omega_3) || std::isnan(omega_4) || std::isnan(omega_5) || std::isnan(omega_6) ||
+                std::isnan(delta_1) || std::isnan(delta_2) || std::isnan(delta_3) || std::isnan(delta_4) || std::isnan(delta_5) || std::isnan(delta_6) ||
+                std::isnan(zeta_1) || std::isnan(zeta_2) || std::isnan(zeta_3) || std::isnan(zeta_4) || std::isnan(zeta_5) || std::isnan(zeta_6) )
             {
-                // 什么也不用做，等待
+                printf("运动学反解无效！\n");
             }
             else
             {
-                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_alpha_cmd", input_alpha);
-                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_beta_cmd", input_beta);
-                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_gamma_cmd", input_gamma);
-                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_x_cmd", input_x);
-                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_y_cmd", input_y);
-                ros::param::get("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_input_z_cmd", input_z);
-                input_z = input_z + 168;
-                printf("input_alpha: %.02f input_beta: %.02f input_gamma: %.02f input_x: %.02f input_y: %.02f input_z: %.02f \n", 
-                                input_alpha, input_beta, input_gamma ,input_x ,input_y ,input_z);
-
-                // 求A_i
-                A_1 = R_z(theta_1, A_is, PI);
-                A_2 = R_z(theta_2, A_is, PI);
-                A_3 = R_z(theta_3, A_is, PI);
-                A_4 = R_z(theta_4, A_is, PI);
-                A_5 = R_z(theta_5, A_is, PI);
-                A_6 = R_z(theta_6, A_is, PI);
-
-                // 求C_i
-                C_1 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, C_1m, PI);
-                C_2 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, C_2m, PI);
-                C_3 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, C_3m, PI);
-                C_4 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, C_4m, PI);
-                C_5 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, C_5m, PI);
-                C_6 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, C_6m, PI);
-                camera_center = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, camera_center_m, PI);
-
-                // 求C_iA_i向量
-                C_1A_1 = PointsSub(A_1, C_1);
-                C_2A_2 = PointsSub(A_2, C_2);
-                C_3A_3 = PointsSub(A_3, C_3);
-                C_4A_4 = PointsSub(A_4, C_4);
-                C_5A_5 = PointsSub(A_5, C_5);
-                C_6A_6 = PointsSub(A_6, C_6);
-
-                // 求omega_i
-                ac_11 = C_1A_1.x;
-                ac_21 = C_2A_2.x;
-                ac_31 = C_3A_3.x;
-                ac_41 = C_4A_4.x;
-                ac_51 = C_5A_5.x;
-                ac_61 = C_6A_6.x;
-
-                ac_12 = C_1A_1.y;
-                ac_22 = C_2A_2.y;
-                ac_32 = C_3A_3.y;
-                ac_42 = C_4A_4.y;
-                ac_52 = C_5A_5.y;
-                ac_62 = C_6A_6.y;
-
-                ac_13 = C_1A_1.z;
-                ac_23 = C_2A_2.z;
-                ac_33 = C_3A_3.z;
-                ac_43 = C_4A_4.z;
-                ac_53 = C_5A_5.z;
-                ac_63 = C_6A_6.z;
-
-                M1_11 = cos(theta_1 * PI / 180.0) * cos(phi_1 * PI / 180.0) - sin(theta_1 * PI / 180.0) * sin(phi_1 * PI / 180.0);
-                M2_11 = cos(theta_2 * PI / 180.0) * cos(phi_2 * PI / 180.0) - sin(theta_2 * PI / 180.0) * sin(phi_2 * PI / 180.0);
-                M3_11 = cos(theta_3 * PI / 180.0) * cos(phi_3 * PI / 180.0) - sin(theta_3 * PI / 180.0) * sin(phi_3 * PI / 180.0);
-                M4_11 = cos(theta_4 * PI / 180.0) * cos(phi_4 * PI / 180.0) - sin(theta_4 * PI / 180.0) * sin(phi_4 * PI / 180.0);
-                M5_11 = cos(theta_5 * PI / 180.0) * cos(phi_5 * PI / 180.0) - sin(theta_5 * PI / 180.0) * sin(phi_5 * PI / 180.0);
-                M6_11 = cos(theta_6 * PI / 180.0) * cos(phi_6 * PI / 180.0) - sin(theta_6 * PI / 180.0) * sin(phi_6 * PI / 180.0);
-
-                M1_21 = sin(theta_1 * PI / 180.0) * cos(phi_1 * PI / 180.0) + cos(theta_1 * PI / 180.0) * sin(phi_1 * PI / 180.0);
-                M2_21 = sin(theta_2 * PI / 180.0) * cos(phi_2 * PI / 180.0) + cos(theta_2 * PI / 180.0) * sin(phi_2 * PI / 180.0);
-                M3_21 = sin(theta_3 * PI / 180.0) * cos(phi_3 * PI / 180.0) + cos(theta_3 * PI / 180.0) * sin(phi_3 * PI / 180.0);
-                M4_21 = sin(theta_4 * PI / 180.0) * cos(phi_4 * PI / 180.0) + cos(theta_4 * PI / 180.0) * sin(phi_4 * PI / 180.0);
-                M5_21 = sin(theta_5 * PI / 180.0) * cos(phi_5 * PI / 180.0) + cos(theta_5 * PI / 180.0) * sin(phi_5 * PI / 180.0);
-                M6_21 = sin(theta_6 * PI / 180.0) * cos(phi_6 * PI / 180.0) + cos(theta_6 * PI / 180.0) * sin(phi_6 * PI / 180.0);
-
-                a_1 = -2 * LA * ac_13;
-                a_2 = -2 * LA * ac_23;
-                a_3 = -2 * LA * ac_33;
-                a_4 = -2 * LA * ac_43;
-                a_5 = -2 * LA * ac_53;
-                a_6 = -2 * LA * ac_63;
-
-                b_1 = 2 * LA * M1_11 * ac_11 + 2 * LA * M1_21 * ac_12;
-                b_2 = 2 * LA * M2_11 * ac_21 + 2 * LA * M2_21 * ac_22;
-                b_3 = 2 * LA * M3_11 * ac_31 + 2 * LA * M3_21 * ac_32;
-                b_4 = 2 * LA * M4_11 * ac_41 + 2 * LA * M4_21 * ac_42;
-                b_5 = 2 * LA * M5_11 * ac_51 + 2 * LA * M5_21 * ac_52;
-                b_6 = 2 * LA * M6_11 * ac_61 + 2 * LA * M6_21 * ac_62;
-
-                LCs_1 = C_1A_1.x * C_1A_1.x + C_1A_1.y * C_1A_1.y + C_1A_1.z * C_1A_1.z;
-                LCs_2 = C_2A_2.x * C_2A_2.x + C_2A_2.y * C_2A_2.y + C_2A_2.z * C_2A_2.z;
-                LCs_3 = C_3A_3.x * C_3A_3.x + C_3A_3.y * C_3A_3.y + C_3A_3.z * C_3A_3.z;
-                LCs_4 = C_4A_4.x * C_4A_4.x + C_4A_4.y * C_4A_4.y + C_4A_4.z * C_4A_4.z;
-                LCs_5 = C_5A_5.x * C_5A_5.x + C_5A_5.y * C_5A_5.y + C_5A_5.z * C_5A_5.z;
-                LCs_6 = C_6A_6.x * C_6A_6.x + C_6A_6.y * C_6A_6.y + C_6A_6.z * C_6A_6.z;
-
-                c_1 = LA*LA -LB*LB + LCs_1;
-                c_2 = LA*LA -LB*LB + LCs_2;
-                c_3 = LA*LA -LB*LB + LCs_3;
-                c_4 = LA*LA -LB*LB + LCs_4;
-                c_5 = LA*LA -LB*LB + LCs_5;
-                c_6 = LA*LA -LB*LB + LCs_6;
-
-                omega_1 = (std::asin(c_1/std::sqrt(a_1*a_1+b_1*b_1)) - std::atan(b_1/a_1)) / PI * 180.0;
-                omega_2 = (std::asin(c_2/std::sqrt(a_2*a_2+b_2*b_2)) - std::atan(b_2/a_2)) / PI * 180.0;
-                omega_3 = (std::asin(c_3/std::sqrt(a_3*a_3+b_3*b_3)) - std::atan(b_3/a_3)) / PI * 180.0;
-                omega_4 = (std::asin(c_4/std::sqrt(a_4*a_4+b_4*b_4)) - std::atan(b_4/a_4)) / PI * 180.0;
-                omega_5 = (std::asin(c_5/std::sqrt(a_5*a_5+b_5*b_5)) - std::atan(b_5/a_5)) / PI * 180.0;
-                omega_6 = (std::asin(c_6/std::sqrt(a_6*a_6+b_6*b_6)) - std::atan(b_6/a_6)) / PI * 180.0;        
-
-                // 动平台上的铰链约束角计算
-                // E点从动平台坐标系转化到静平台坐标系
-                E_1 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, E_1m, PI);
-                E_2 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, E_2m, PI);
-                E_3 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, E_3m, PI);
-                E_4 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, E_4m, PI);
-                E_5 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, E_5m, PI);
-                E_6 = RP_xyz(input_alpha, input_beta, input_gamma, input_x, input_y, input_z, E_6m, PI);
-
-                // 求向量C_iE_i
-                C_1E_1_vec = PointsSub(E_1, C_1);
-                C_2E_2_vec = PointsSub(E_2, C_2);
-                C_3E_3_vec = PointsSub(E_3, C_3);
-                C_4E_4_vec = PointsSub(E_4, C_4);
-                C_5E_5_vec = PointsSub(E_5, C_5);
-                C_6E_6_vec = PointsSub(E_6, C_6);
-                // 求向量C_iB_i   
-                C_1B_1_vec = PointsSub(B_1, C_1);
-                C_2B_2_vec = PointsSub(B_2, C_2);
-                C_3B_3_vec = PointsSub(B_3, C_3);
-                C_4B_4_vec = PointsSub(B_4, C_4);
-                C_5B_5_vec = PointsSub(B_5, C_5);
-                C_6B_6_vec = PointsSub(B_6, C_6);
-
-                //计算铰链座轴线与连杆夹角
-                zeta_1 = ComputeConstraintAngular(C_1E_1_vec, C_1B_1_vec);
-                zeta_2 = ComputeConstraintAngular(C_2E_2_vec, C_2B_2_vec);
-                zeta_3 = ComputeConstraintAngular(C_3E_3_vec, C_3B_3_vec);
-                zeta_4 = ComputeConstraintAngular(C_4E_4_vec, C_4B_4_vec);
-                zeta_5 = ComputeConstraintAngular(C_5E_5_vec, C_5B_5_vec);
-                zeta_6 = ComputeConstraintAngular(C_6E_6_vec, C_6B_6_vec);           
-                
-                // 求B点，
-                // 求B_id
-                B_1d = R_y(omega_1, P_d, PI);
-                B_2d = R_y(omega_2, P_d, PI);
-                B_3d = R_y(omega_3, P_d, PI);
-                B_4d = R_y(omega_4, P_d, PI);
-                B_5d = R_y(omega_5, P_d, PI);
-                B_6d = R_y(omega_6, P_d, PI);
-
-                // 求B_is
-                B_1s = PointsAdd(R_z(phi_1, B_1d, PI), A_is);
-                B_2s = PointsAdd(R_z(phi_2, B_2d, PI), A_is);
-                B_3s = PointsAdd(R_z(phi_3, B_3d, PI), A_is);
-                B_4s = PointsAdd(R_z(phi_4, B_4d, PI), A_is);
-                B_5s = PointsAdd(R_z(phi_5, B_5d, PI), A_is);
-                B_6s = PointsAdd(R_z(phi_6, B_6d, PI), A_is);
-
-                // 求B_i
-                B_1 = R_z(theta_1, B_1s, PI);
-                B_2 = R_z(theta_2, B_2s, PI);
-                B_3 = R_z(theta_3, B_3s, PI);
-                B_4 = R_z(theta_4, B_4s, PI);
-                B_5 = R_z(theta_5, B_5s, PI);
-                B_6 = R_z(theta_6, B_6s, PI);
-                
-                //舵机上的铰链约束角计算
-                D_1d = R_y(omega_1, TD_id135, PI);
-                D_2d = R_y(omega_2, TD_id246, PI);
-                D_3d = R_y(omega_3, TD_id135, PI);
-                D_4d = R_y(omega_4, TD_id246, PI);
-                D_5d = R_y(omega_5, TD_id135, PI);
-                D_6d = R_y(omega_6, TD_id246, PI);
-
-                D_1s = PointsAdd(R_z(phi_1, D_1d, PI), A_is);
-                D_2s = PointsAdd(R_z(phi_2, D_2d, PI), A_is);
-                D_3s = PointsAdd(R_z(phi_3, D_3d, PI), A_is);
-                D_4s = PointsAdd(R_z(phi_4, D_4d, PI), A_is);
-                D_5s = PointsAdd(R_z(phi_5, D_5d, PI), A_is);
-                D_6s = PointsAdd(R_z(phi_6, D_6d, PI), A_is);
-
-                D_1 = R_z(theta_1, D_1s, PI);
-                D_2 = R_z(theta_2, D_2s, PI);
-                D_3 = R_z(theta_3, D_3s, PI);
-                D_4 = R_z(theta_4, D_4s, PI);
-                D_5 = R_z(theta_5, D_5s, PI);
-                D_6 = R_z(theta_6, D_6s, PI);
-                
-                // 求向量B_iD_i
-                B_1D_1_vec = PointsSub(D_1, B_1);
-                B_2D_2_vec = PointsSub(D_2, B_2);
-                B_3D_3_vec = PointsSub(D_3, B_3);
-                B_4D_4_vec = PointsSub(D_4, B_4);
-                B_5D_5_vec = PointsSub(D_5, B_5);
-                B_6D_6_vec = PointsSub(D_6, B_6);
-                // 求向量B_iC_i   
-                B_1C_1_vec = PointsSub(C_1, B_1);
-                B_2C_2_vec = PointsSub(C_2, B_2);
-                B_3C_3_vec = PointsSub(C_3, B_3);
-                B_4C_4_vec = PointsSub(C_4, B_4);
-                B_5C_5_vec = PointsSub(C_5, B_5);
-                B_6C_6_vec = PointsSub(C_6, B_6);
-
-                delta_1 = 90.0 - ComputeConstraintAngular(B_1D_1_vec, B_1C_1_vec);
-                delta_2 = 90.0 - ComputeConstraintAngular(B_2D_2_vec, B_2C_2_vec);
-                delta_3 = 90.0 - ComputeConstraintAngular(B_3D_3_vec, B_3C_3_vec);
-                delta_4 = 90.0 - ComputeConstraintAngular(B_4D_4_vec, B_4C_4_vec);
-                delta_5 = 90.0 - ComputeConstraintAngular(B_5D_5_vec, B_5C_5_vec);
-                delta_6 = 90.0 - ComputeConstraintAngular(B_6D_6_vec, B_6C_6_vec);
-
-                
-                if (std::isnan(omega_1) || std::isnan(omega_2) || std::isnan(omega_3) || std::isnan(omega_4) || std::isnan(omega_5) || std::isnan(omega_6) ||
-                    std::isnan(delta_1) || std::isnan(delta_2) || std::isnan(delta_3) || std::isnan(delta_4) || std::isnan(delta_5) || std::isnan(delta_6) ||
-                    std::isnan(zeta_1) || std::isnan(zeta_2) || std::isnan(zeta_3) || std::isnan(zeta_4) || std::isnan(zeta_5) || std::isnan(zeta_6) )
+                if(delta_1 > constraint_angle_delta || delta_2 > constraint_angle_delta || delta_3 > constraint_angle_delta || delta_4 > constraint_angle_delta || delta_5 > constraint_angle_delta || delta_6 > constraint_angle_delta ||
+                delta_1 < -constraint_angle_delta || delta_2 < -constraint_angle_delta || delta_3 < -constraint_angle_delta || delta_4 < -constraint_angle_delta || delta_5 < -constraint_angle_delta || delta_6 < -constraint_angle_delta ||
+                zeta_1 > constraint_angle_zata || zeta_2 > constraint_angle_zata || zeta_3 > constraint_angle_zata || zeta_4 > constraint_angle_zata || zeta_5 > constraint_angle_zata || zeta_6 > constraint_angle_zata ||
+                zeta_1 < -constraint_angle_zata || zeta_2 < -constraint_angle_zata || zeta_3 < -constraint_angle_zata || zeta_4 < -constraint_angle_zata || zeta_5 < -constraint_angle_zata || zeta_6 < -constraint_angle_zata)
                 {
-                    printf("运动学反解无效！\n");
+                    printf("铰链约束角超过限位\n");
                 }
                 else
                 {
-                    if(delta_1 > constraint_angle_delta || delta_2 > constraint_angle_delta || delta_3 > constraint_angle_delta || delta_4 > constraint_angle_delta || delta_5 > constraint_angle_delta || delta_6 > constraint_angle_delta ||
-                    delta_1 < -constraint_angle_delta || delta_2 < -constraint_angle_delta || delta_3 < -constraint_angle_delta || delta_4 < -constraint_angle_delta || delta_5 < -constraint_angle_delta || delta_6 < -constraint_angle_delta ||
-                    zeta_1 > constraint_angle_zata || zeta_2 > constraint_angle_zata || zeta_3 > constraint_angle_zata || zeta_4 > constraint_angle_zata || zeta_5 > constraint_angle_zata || zeta_6 > constraint_angle_zata ||
-                    zeta_1 < -constraint_angle_zata || zeta_2 < -constraint_angle_zata || zeta_3 < -constraint_angle_zata || zeta_4 < -constraint_angle_zata || zeta_5 < -constraint_angle_zata || zeta_6 < -constraint_angle_zata)
-                    {
-                        printf("铰链约束角超过限位\n");
-                    }
-                    else
-                    {
-                        ros::param::set("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm1_cmd", omega_1);
-                        ros::param::set("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm2_cmd", omega_2);
-                        ros::param::set("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm3_cmd", omega_3);
-                        ros::param::set("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm4_cmd", omega_4);
-                        ros::param::set("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm5_cmd", omega_5);
-                        ros::param::set("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm6_cmd", omega_6);
-                        printf("omega_1: %.02f omega_2: %.02f omega_3: %.02f omega_4: %.02f omega_5: %.02f omega_6: %.02f \n", 
-                                omega_1, omega_2, omega_3 ,omega_4 ,omega_5 ,omega_6);
-                        printf("delta_1: %.02f delta_2: %.02f delta_3: %.02f delta_4: %.02f delta_5: %.02f delta_6: %.02f \n", 
-                            delta_1, delta_2, delta_3 ,delta_4 ,delta_5 ,delta_6);
-                        printf("zeta_1: %.02f zeta_2: %.02f zeta_3: %.02f zeta_4: %.02f zeta_5: %.02f zeta_6: %.02f \n", 
-                            zeta_1, zeta_2, zeta_3 ,zeta_4 ,zeta_5 ,zeta_6);
-                    }
+                    // ros::param::set("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm1_cmd", omega_1);
+                    // ros::param::set("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm2_cmd", omega_2);
+                    // ros::param::set("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm3_cmd", omega_3);
+                    // ros::param::set("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm4_cmd", omega_4);
+                    // ros::param::set("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm5_cmd", omega_5);
+                    // ros::param::set("/xian_dj_stewart_platform_params_server/xian_dj_stewart_platform_arm6_cmd", omega_6);
+                    
+                    pub_msg.xian_dj_stewart_platform_arm1_cmd = omega_1;
+                    pub_msg.xian_dj_stewart_platform_arm2_cmd = omega_2;
+                    pub_msg.xian_dj_stewart_platform_arm3_cmd = omega_3;
+                    pub_msg.xian_dj_stewart_platform_arm4_cmd = omega_4;
+                    pub_msg.xian_dj_stewart_platform_arm5_cmd = omega_5;
+                    pub_msg.xian_dj_stewart_platform_arm6_cmd = omega_6;
+                    stewart_platform_control_pub.publish(pub_msg);
+
+                    printf("omega_1: %.02f omega_2: %.02f omega_3: %.02f omega_4: %.02f omega_5: %.02f omega_6: %.02f \n", 
+                            omega_1, omega_2, omega_3 ,omega_4 ,omega_5 ,omega_6);
+                    printf("delta_1: %.02f delta_2: %.02f delta_3: %.02f delta_4: %.02f delta_5: %.02f delta_6: %.02f \n", 
+                        delta_1, delta_2, delta_3 ,delta_4 ,delta_5 ,delta_6);
+                    printf("zeta_1: %.02f zeta_2: %.02f zeta_3: %.02f zeta_4: %.02f zeta_5: %.02f zeta_6: %.02f \n", 
+                        zeta_1, zeta_2, zeta_3 ,zeta_4 ,zeta_5 ,zeta_6);
                 }
             }
+        }
+
+         void m_timer_heart_beat_func(const ros::WallTimerEvent& event)
+        {           
+            xian_dj_stewart_platform_control_heart_beat = xian_dj_stewart_platform_control_heart_beat > 1000 ? 0 : (xian_dj_stewart_platform_control_heart_beat + 1);
+            std::cout << "xian_dj_stewart_platform_control_heart_beat: " << xian_dj_stewart_platform_control_heart_beat << std::endl;
+            heart_beat_msg.data = xian_dj_stewart_platform_control_heart_beat;
+            stewart_platform_control_state_pub.publish(heart_beat_msg);
         }
         
         //绕Y轴旋转矩阵运算
@@ -378,6 +386,12 @@ class XianDjStewartPlatformControl
         }
         
     private:
+        ros::Subscriber stewart_platform_control_sub;
+        ros::Publisher stewart_platform_control_state_pub;
+        ros::Publisher stewart_platform_control_pub;
+        std_msgs::UInt16 heart_beat_msg;
+        xian_dj_stewart_platform_control_pkg::xian_dj_stewart_platform_base_electric pub_msg;
+
         pcl::PointCloud<pcl::PointXYZI>::Ptr cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
         std::vector<pcl::PointXYZ> vertices;
         double point_size = 5;
@@ -694,7 +708,7 @@ int main(int argc, char** argv)
     spinner.start();
 
     xian_dj_stewart_platform_control.m_timer_heart_beat = nh_2.createWallTimer(ros::WallDuration(1.0), &XianDjStewartPlatformControl::m_timer_heart_beat_func, &xian_dj_stewart_platform_control);
-    xian_dj_stewart_platform_control.m_timer_control = nh_2.createWallTimer(ros::WallDuration(0.3), &XianDjStewartPlatformControl::m_timer_control_func, &xian_dj_stewart_platform_control);
+    
     ros::waitForShutdown();
     
     // ros::spin();

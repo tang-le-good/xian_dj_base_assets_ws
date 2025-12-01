@@ -220,4 +220,6 @@ add_executable(xian_dj_car_chassis_base_electric src/xian_dj_car_chassis_base_el
 add_dependencies(xian_dj_car_chassis_base_electric ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(xian_dj_car_chassis_base_electric ${catkin_LIBRARIES})
 
-
+add_executable(xian_dj_car_chassis_error_monitor src/xian_dj_car_chassis_error_monitor.cpp )
+add_dependencies(xian_dj_car_chassis_error_monitor ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(xian_dj_car_chassis_error_monitor ${catkin_LIBRARIES})

@@ -16,8 +16,7 @@ class XianDjRetractablePlatformErrorMonitor
             
             xian_dj_retractable_platform_error_monitor_pub = nh.advertise<std_msgs::String>("xian_dj_retractable_platform_error_monitor_msg", 1);
         }
-
-        ros::WallTimer m_timer_heart_beat;
+        
         ros::WallTimer m_timer_control;
         void retractable_platform_control_state_callback(const std_msgs::UInt16::ConstPtr &data)
         {

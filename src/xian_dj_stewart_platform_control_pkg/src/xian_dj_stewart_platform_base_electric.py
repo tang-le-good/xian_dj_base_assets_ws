@@ -82,7 +82,9 @@ class XianDjStewartPlatformBaseElectric:
             tx_data = self.encode_HEXA_CMD_SERVO_MOVE(self.HEXA_CMD_SERVO_MOVE)
             if self.sock:
                 # self.serial_port.write(tx_data)
-                self.sock.sendall(tx_data)
+                res = self.sock.sendall(tx_data)
+                print("res:", res)
+                print("counter:", self.counter)
                 print("angle 1: % 0.3f, angle 2: % 0.3f, angle 3: % 0.3f, angle 4: % 0.3f, angle 5: % 0.3f, angle 6: % 0.3f" % 
                               (self.xian_dj_stewart_platform_arm1_cmd,self.xian_dj_stewart_platform_arm2_cmd,self.xian_dj_stewart_platform_arm3_cmd,self.xian_dj_stewart_platform_arm4_cmd,self.xian_dj_stewart_platform_arm5_cmd,self.xian_dj_stewart_platform_arm6_cmd))
                 
@@ -90,6 +92,8 @@ class XianDjStewartPlatformBaseElectric:
                 if self.counter > 1000:
                     self.counter = 0
                 self.counter += 1
+
+                
                 self.heart_beat_msg.data = self.counter
                 self.pub_msg.publish(self.heart_beat_msg)
 

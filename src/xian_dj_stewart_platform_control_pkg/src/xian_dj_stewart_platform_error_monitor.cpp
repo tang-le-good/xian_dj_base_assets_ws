@@ -99,7 +99,7 @@ class XianDjStewartPlatformErrorMonitor
                 xian_dj_stewart_platform_manual_controller_error = 0;
             }
             error_sum = xian_dj_stewart_platform_control_error + xian_dj_stewart_platform_base_electric_error + xian_dj_stewart_platform_manual_controller_error ;
-            xian_dj_stewart_platform_error_code = error_sum + 200;
+            xian_dj_stewart_platform_error_code = error_sum + 300;
             std::string pub_sting = std::to_string(xian_dj_stewart_platform_error_code) 
                                     + "   " + std::to_string(xian_dj_stewart_platform_control_error)
                                     + "   " + std::to_string(xian_dj_stewart_platform_base_electric_error)

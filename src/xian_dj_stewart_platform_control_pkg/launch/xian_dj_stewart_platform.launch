@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <node name ="xian_dj_stewart_platform_base_electric" pkg="xian_dj_stewart_platform_control_pkg" type="xian_dj_stewart_platform_base_electric.py" />
+    <!-- <node name ="xian_dj_stewart_platform_base_electric" pkg="xian_dj_stewart_platform_control_pkg" type="xian_dj_stewart_platform_base_electric.py" /> -->
     <node name ="xian_dj_stewart_platform_control" pkg="xian_dj_stewart_platform_control_pkg" type="xian_dj_stewart_platform_control" />
     <node name ="xian_dj_stewart_platform_manual_controller" pkg="xian_dj_stewart_platform_control_pkg" type="xian_dj_stewart_platform_manual_controller" />
     <node name ="xian_dj_stewart_platform_error_monitor" pkg="xian_dj_stewart_platform_control_pkg" type="xian_dj_stewart_platform_error_monitor" />

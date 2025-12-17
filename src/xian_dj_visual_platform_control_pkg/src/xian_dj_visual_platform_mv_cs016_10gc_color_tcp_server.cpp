@@ -592,14 +592,24 @@ private:
 
 int main(int argc, char** argv)
 {
-    // 初始化ROS节点[4](@ref)
+    // 初始化ROS节点
     ros::init(argc, argv, "xian_dj_visual_platform_mv_cs016_10gc_color_tcp_server");
     ros::NodeHandle private_nh("~");
-    // 从参数服务器获取私有参数[10](@ref)
+    
+    // 修复核心：端口默认值设为4068，且避免被覆盖为0
     int port_ = 4068;
+    // 第三个参数改为4068（原错误为0），确保无参数时端口为4068
+    private_nh.param<int>("port", port_, 4068);  
+    
+    // 新增：端口有效性校验（防止手动传无效值）
+    if (port_ < 1025 || port_ > 65534) {
+        ROS_ERROR("Port %d is invalid! Must be between 1025 and 65534", port_);
+        return -1;
+    }
+
+    // 相机索引参数（原有逻辑，无错误）
     int camera_index_ = 0;
     private_nh.param<int>("camera_index", camera_index_, 0);
-    private_nh.param<int>("port", port_, 0);
 
     try 
     {

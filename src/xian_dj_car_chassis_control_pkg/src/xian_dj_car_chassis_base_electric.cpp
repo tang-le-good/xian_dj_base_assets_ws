@@ -527,8 +527,6 @@ int main(int argc, char** argv)
     //initial and name node
     ros::init(argc,argv,"xian_dj_car_chassis_base_electric");
 
-    
-
     // 创建一个ROS节点句柄
     ros::NodeHandle nh_2;
 

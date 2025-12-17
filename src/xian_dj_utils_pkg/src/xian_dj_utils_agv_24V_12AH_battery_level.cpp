@@ -14,10 +14,10 @@
 #include <std_msgs/UInt16.h>
 #include <std_msgs/String.h>
 
-#define SERVER_IP "192.168.1.126"
-#define SERVER_PORT 8887
-#define MAX_RETRY 900000000 
-#define RETRY_INTERVAL 3 // 重试间隔(秒)     3秒重连1次，900000000次，时间大概是10年
+// #define SERVER_IP "192.168.1.135"
+// #define SERVER_PORT 8886
+// #define MAX_RETRY 900000000 
+// #define RETRY_INTERVAL 3 // 重试间隔(秒)     3秒重连1次，900000000次，时间大概是10年
 
 // client发送的数据
 struct client2server 
@@ -50,17 +50,21 @@ class TCPClient
         int sockfd;
         struct sockaddr_in server_addr;
         bool connected;
+        std::string server_ip_;
+        int server_port_;
+        int max_retry=900000000;
+        int RETRY_INTERVAL=3; // 3s重连一次
         
     public:
-        TCPClient() : sockfd(-1), connected(false) 
+        TCPClient(const std::string& ip, int port):server_ip_(ip), server_port_(port), sockfd(-1), connected(false) 
         {
             memset(&server_addr, 0, sizeof(server_addr));
             server_addr.sin_family = AF_INET;
-            server_addr.sin_port = htons(SERVER_PORT);
+            server_addr.sin_port = htons(server_port_);
             
-            if (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr) <= 0) 
+            if (inet_pton(AF_INET, server_ip_.c_str(), &server_addr.sin_addr) <= 0) 
             {
-                std::cerr << "无效的地址或地址不支持" << std::endl;
+                std::cerr << "无效的地址或地址不支持: " << server_ip_ << std::endl;
             }
         }
         
@@ -69,7 +73,7 @@ class TCPClient
             disconnect();
         }
         
-        bool connectToServer(int max_retry = MAX_RETRY) 
+        bool connectToServer() 
         {
             int retry_count = 0;
             
@@ -94,7 +98,7 @@ class TCPClient
                 }
                 
                 connected = true;
-                std::cout << "成功连接到服务器 " << SERVER_IP << ":" << SERVER_PORT << std::endl;
+                std::cout << "成功连接到服务器 " << server_ip_ << ":" << server_port_ << std::endl;
                 return true;
             }
             
@@ -131,7 +135,6 @@ class TCPClient
         
         bool receiveData(server2client& server_data) 
         {
-            
             // 设置文件描述符集合
             fd_set readfds;
             FD_ZERO(&readfds);
@@ -154,11 +157,12 @@ class TCPClient
                 // connected = false;
                 return false;
             }
-            
+
             // 有数据可读，正常接收
             int recv_len = recv(sockfd, &server_data, sizeof(server_data), 0);
             
-            if (recv_len <= 0) {
+            if (recv_len <= 0) 
+            {
                 std::cerr << "接收数据失败或连接已关闭" << std::endl;
                 connected = false;
                 return false;
@@ -175,12 +179,15 @@ class TCPClient
 class XianDjAgv24V12AHBatteryLevel
 {
     public:
-        XianDjAgv24V12AHBatteryLevel()
+        XianDjAgv24V12AHBatteryLevel(const std::string& ip, int port, const std::string& pub_topic_name)
+                                    :server_ip_(ip), server_port_(port), pub_topic_name_(pub_topic_name)
         {
             // 创建一个ROS节点句柄
             ros::NodeHandle nh;
+            tcp_init();
             xian_dj_utils_agv_battery_level_state_pub = nh.advertise<std_msgs::UInt16>("xian_dj_utils_agv_battery_level_state_msg", 1);
-            xian_dj_utils_agv_battery_level_pub = nh.advertise<std_msgs::String>("xian_dj_utils_agv_battery_level_msg", 1);
+            xian_dj_utils_agv_battery_level_pub = nh.advertise<std_msgs::String>(pub_topic_name_, 1);
+
         }
 
         ros::WallTimer m_timer_heart_beat;
@@ -200,6 +207,8 @@ class XianDjAgv24V12AHBatteryLevel
             {
                 timeout_counter = 0;
             }
+
+
             if(timeout_counter >= 5)
             {
                 std::cout << "xian_dj_utils_agv_24V_12AH_battery_level_heart_beat: " << xian_dj_utils_agv_24V_12AH_battery_level_heart_beat << std::endl;
@@ -260,6 +269,12 @@ class XianDjAgv24V12AHBatteryLevel
         ros::Publisher xian_dj_utils_agv_battery_level_state_pub;
         ros::Publisher xian_dj_utils_agv_battery_level_pub;
 
+        std::string server_ip_;
+        std::string pub_topic_name_;
+        int server_port_;
+        int RETRY_INTERVAL = 3; 
+        TCPClient client{server_ip_, server_port_};
+
         unsigned char client_address_0;
         unsigned char client_address_1;
         unsigned char client_address_2;
@@ -270,7 +285,6 @@ class XianDjAgv24V12AHBatteryLevel
         unsigned char client_address_7;
         unsigned char * tcp_server_date;
 
-        TCPClient client;
         struct client2server client_data;
         struct server2client server_data;
         
@@ -450,16 +464,45 @@ class XianDjAgv24V12AHBatteryLevel
             low_byte = crc_value & 0xFF;          // 获取低8位
         }
 
+        void tcp_init()
+        {
+            // 初始连接
+            if (!client.connectToServer()) 
+            {
+                std::cerr << "无法连接到服务器，退出程序" << std::endl;
+                return;
+            }
+        }
+
 };
 
 int main(int argc, char** argv)
 {
     //initial and name node
     ros::init(argc,argv,"xian_dj_utils_agv_24V_12AH_battery_level");
-    XianDjAgv24V12AHBatteryLevel xian_dj_utils_agv_24V_12AH_battery_level;
+
+    // XianDjAgv24V12AHBatteryLevel xian_dj_utils_agv_24V_12AH_battery_level;
 
     // 创建一个ROS节点句柄
     ros::NodeHandle nh_2;
+
+    std::string server_ip_;
+    std::string pub_topic_name_;
+    std::string sub_topic_name_;
+    int server_port_;
+
+    ros::NodeHandle private_nh("~");
+        
+    // 从参数服务器获取私有参数[10](@ref)
+    private_nh.param<int>("server_port", server_port_, 7886);
+    private_nh.param<std::string>("server_ip", server_ip_, "192.168.1.132");
+    private_nh.param<std::string>("pub_topic_name", pub_topic_name_, "left_driver");
+    
+    ROS_INFO("server_ip: %s, server_port: %d, pub_topic_name: %s ", 
+                server_ip_.c_str(), server_port_, pub_topic_name_.c_str() );
+    XianDjAgv24V12AHBatteryLevel xian_dj_utils_agv_24V_12AH_battery_level{server_ip_, server_port_, pub_topic_name_};
+
+
     ros::AsyncSpinner spinner(0);
     spinner.start();
 
